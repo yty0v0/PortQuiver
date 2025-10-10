@@ -31,11 +31,12 @@ go build -o portquiver *.go
 
 ## 使用说明
 ```
+用法：portquiver [选项]
 选项:
 -t string    目标地址 (IP/域名)  
 -p string    指定端口 (如: 80,443,1000-2000)
 -s string    扫描类型: CONNECT,SYN,ACK,FIN,NULL,UDP (默认: CONNECT)
-（除了 TCP CONNECT 和 UDP 扫描，其它类型扫描要使用管理员权限）
+（除了 TCP CONNECT 和 UDP 扫描，其它类型扫描都要使用管理员权限运行）
     T：TCP CONNECT
     S：TCP SYN
     A：TCP ACK
