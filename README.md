@@ -35,6 +35,7 @@ go build -o portquiver *.go
 -t string    目标地址 (IP/域名)  
 -p string    指定端口 (如: 80,443,1000-2000)
 -s string    扫描类型: CONNECT,SYN,ACK,FIN,NULL,UDP (默认: CONNECT)
+（除了 TCP CONNECT 和 UDP 扫描，其它类型扫描要使用管理员权限）
     T：TCP CONNECT
     S：TCP SYN
     A：TCP ACK
@@ -47,7 +48,7 @@ go build -o portquiver *.go
 
 示例:
 ./portquiver -t example.com -A
-./portquiver -t example.com -A -s A
+sudo ./portquiver -t example.com -A -s A
 ./portquiver -t 192.168.1.1 -p 80,443,22
 ./portquiver -t 192.168.1.1 -p 1-1000
 ./portquiver -t example.com -C -R 1000
