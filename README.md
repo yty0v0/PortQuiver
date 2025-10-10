@@ -9,8 +9,25 @@
 
 各种模式和方法可以自由切换和选择，使用简单，代码通俗易懂，并附有详细注释，方便基于该工具进行再次改进和功能添加。
 
-## 安装
+目前只支持Linux/系统
 
+## 安装
+直接下载zip压缩包，放到Linux上解压
+```
+unzip PortQuiver-main.zip
+```
+进入解压完的文件夹
+```
+cd PortQuiver-main
+```
+编译所有文件
+```
+go build -o portquiver *.go
+```
+运行程序查看帮助信息，如果显示帮助信息说明安装成功
+```
+./portquiver -h
+```
 
 ## 使用方法
 ```
@@ -29,9 +46,8 @@
 -R int       并发扫描次数 (默认：500)
 
 示例:
-portquiver -t example.com -A
-portquiver -t example.com -A -s A
-portquiver -t 192.168.1.1 -p 80,443,22
-portquiver -t 192.168.1.1 -p 1-1000
-portquiver -t example.com -C -R 1000
-
+./portquiver -t example.com -A
+./portquiver -t example.com -A -s A
+./portquiver -t 192.168.1.1 -p 80,443,22
+./portquiver -t 192.168.1.1 -p 1-1000
+./portquiver -t example.com -C -R 1000
