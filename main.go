@@ -70,11 +70,11 @@ func parseFlags() *Config {
 		fmt.Println("  -C           常见端口扫描")
 		fmt.Println("  -R int       并发扫描次数 (默认：500)")
 		fmt.Println("\n示例:")
-		fmt.Println("  portquiver -t example.com -A")
-		fmt.Println("  portquiver -t example.com -A -s A")
-		fmt.Println("  portquiver -t 192.168.1.1 -p 80,443,22")
-		fmt.Println("  portquiver -t 192.168.1.1 -p 1-1000")
-		fmt.Println("  portquiver -t example.com -C -R 1000")
+		fmt.Println("  ./portquiver -t example.com -A                 		 对 example.com 的全端口进行 CONNECT 扫描")
+		fmt.Println("  sudo ./portquiver -t example.com -A -s A			     对 example.com 的全端口进行 ACK 扫描")
+		fmt.Println("  ./portquiver -t 192.168.1.1 -p 80,443,22				 对 192.168.1.1 的 80,443,22 端口进行 CONNECT 扫描")			
+		fmt.Println("  ./portquiver -t 192.168.1.1 -p 1-1000				 对 192.168.1.1 的 1-1000 端口进行 CONNECT 扫描")
+		fmt.Println("  sudo ./portquiver -t example.com -C -R 1000 -s S		 对 example.com 的常见端口进行并发 1000 的 SYN 扫描")
 	}
 
 	// 解析命令行参数，将参数值赋给对应的变量
