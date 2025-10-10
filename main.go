@@ -59,7 +59,7 @@ func parseFlags() *Config {
 		fmt.Println("  -t string    目标地址 (IP/域名)")
 		fmt.Println("  -p string    指定端口 (如: 80,443,1000-2000)")
 		fmt.Println("  -s string    扫描类型: CONNECT,SYN,ACK,FIN,NULL,UDP (默认: CONNECT)")
-		fmt.Println("（除了TCP CONNECT和UDP扫描，其它类型扫描要使用管理员权限）")
+		fmt.Println("（除了TCP CONNECT和UDP扫描，其它类型扫描都要使用管理员权限运行）")
 		fmt.Println("     T：TCP CONNECT")
 		fmt.Println("     S：TCP SYN")
 		fmt.Println("     A：TCP ACK")
