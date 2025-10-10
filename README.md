@@ -48,8 +48,10 @@ go build -o portquiver *.go
 -R int       并发扫描次数 (默认：500)
 
 示例:
-./portquiver -t example.com -A
-sudo ./portquiver -t example.com -A -s A
-./portquiver -t 192.168.1.1 -p 80,443,22
-./portquiver -t 192.168.1.1 -p 1-1000
-./portquiver -t example.com -C -R 1000
+./portquiver -t example.com -A                       //对 example.com 的全端口进行 CONNECT 扫描
+sudo ./portquiver -t example.com -A -s A             //对 example.com 的全端口进行 ACK 扫描
+./portquiver -t 192.168.1.1 -p 80,443,22             //对 192.168.1.1 的 80,443,22 端口进行 CONNECT 扫描
+./portquiver -t 192.168.1.1 -p 1-1000                //对 192.168.1.1 的 1-1000 端口进行 CONNECT 扫描
+sudo ./portquiver -t example.com -C -R 1000 -s S     //对 example.com 的常见端口进行并发 1000 的 SYN 扫描
+
+
