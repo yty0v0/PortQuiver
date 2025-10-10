@@ -29,7 +29,7 @@ go build -o portquiver *.go
 ./portquiver -h
 ```
 
-## 使用方法
+## 使用说明
 ```
 选项:
 -t string    目标地址 (IP/域名)  
