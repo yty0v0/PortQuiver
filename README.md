@@ -34,4 +34,8 @@ portquiver -t example.com -A -s A
 portquiver -t 192.168.1.1 -p 80,443,22
 portquiver -t 192.168.1.1 -p 1-1000
 portquiver -t example.com -C -R 1000
+<<<<<<< HEAD
 ```
+=======
+```
+>>>>>>> 1eb3a8ff10b7c1da7510a1fde867973f4d8f8031
