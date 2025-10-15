@@ -134,12 +134,12 @@ func createFINPacket(srcIP net.IP, srcPort int, dstIP net.IP, dstPort int) ([]by
 
 // listenForFINResponse 监听FIN扫描响应
 func listenForFINResponse(conn net.PacketConn, srcPort, dstPort int, dstIP net.IP, timeout time.Duration) (string, string) {
-	deadline := time.Now().Add(timeout)                          //设置总超时
-	conn.SetReadDeadline(time.Now().Add(200 * time.Millisecond)) // 设置读取超时
+	deadline := time.Now().Add(timeout) //设置总超时
 
 	buffer := make([]byte, 4096)
 
 	for {
+		conn.SetReadDeadline(time.Now().Add(200 * time.Millisecond)) // 设置读取超时
 		if time.Now().After(deadline) {
 			// 超时无响应 - 可能开放或被过滤
 			return "open|filtered", "无响应（可能开放或被防火墙过滤）"
