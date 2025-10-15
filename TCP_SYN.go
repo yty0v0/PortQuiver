@@ -112,11 +112,12 @@ func SynScan(dstIp string, dstPort int) bool {
 		return false
 	}
 
-	deadline := time.Now().Add(4 * time.Second)              //设置for循环操作的总超时
-	conn.SetDeadline(time.Now().Add(200 * time.Millisecond)) //设置读取超时,100毫秒
+	deadline := time.Now().Add(4 * time.Second) //设置for循环操作的总超时
+
 	//监听响应并分析
 	for {
-		if time.Now().After(deadline) { //总超时到了直接结束
+		conn.SetDeadline(time.Now().Add(200 * time.Millisecond)) //设置读取超时,100毫秒
+		if time.Now().After(deadline) {                          //总超时到了直接结束
 			return false
 		}
 
