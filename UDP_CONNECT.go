@@ -34,10 +34,6 @@ func udp_connect(ipaddress string, ports []int, rate int) {
 			results[p] = result
 			mu.Unlock()
 
-			//if result.State == "open" {
-			//	fmt.Printf("发现开放端口: %d (%s)\n", p, result.Service)
-			//	fmt.Println()
-			//}
 		}(port)
 	}
 	wg.Wait()
@@ -96,9 +92,6 @@ func scanUDPPort(ip string, port int, timeout time.Duration) UDPResult {
 	}
 	defer conn.Close()
 
-	// 设置读写超时
-	conn.SetDeadline(time.Now().Add(timeout))
-
 	// 发送探测数据
 	probeData := getProbeData(port)
 	_, err = conn.Write(probeData)
@@ -107,27 +100,42 @@ func scanUDPPort(ip string, port int, timeout time.Duration) UDPResult {
 		return result
 	}
 
-	// 尝试接收UDP响应
 	buffer := make([]byte, 1024)
-	n, err := conn.Read(buffer)
 
-	if err != nil {
-		// 检查是否是超时错误
-		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+	//设置总超时
+	deadline := time.Now().Add(timeout)
+
+	for {
+		// 设置读写超时
+		conn.SetDeadline(time.Now().Add(200 * time.Millisecond))
+
+		//总读取超时直接返回
+		if time.Now().After(deadline) {
 			// 超时，可能是开放或被过滤
 			return result // 保持 open|filtered 状态
-		} else {
-			result.State = "error"
 		}
-	} else {
-		// 收到响应，端口开放
-		if n > 0 {
-			result.State = "open"
-			fmt.Printf("端口 %d 收到响应，长度: %d 字节\n", port, n)
+
+		// 尝试接收UDP响应
+		n, err := conn.Read(buffer)
+
+		if err != nil {
+			// 检查是否是超时错误
+			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+				//短超时直接下一轮循环
+				continue
+			} else {
+				result.State = "error"
+				return result
+			}
+		} else {
+			// 收到响应，端口开放
+			if n > 0 {
+				result.State = "open"
+				fmt.Printf("端口 %d 收到响应，长度: %d 字节\n", port, n)
+				return result
+			}
 		}
 	}
-
-	return result
 }
 
 // 探测数据
