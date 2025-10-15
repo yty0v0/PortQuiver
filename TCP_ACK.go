@@ -170,11 +170,12 @@ func sendPacket(conn net.PacketConn, packet []byte, dstip net.IP) error {
 func listenForResponse(conn net.PacketConn, srcPort, dstPort int, dstip net.IP, timeout time.Duration) (string, string, error) {
 
 	deadline := time.Now().Add(timeout)
-	conn.SetReadDeadline(time.Now().Add(200 * time.Millisecond))
 
 	buffer := make([]byte, 4096)
 
 	for {
+		conn.SetReadDeadline(time.Now().Add(200 * time.Millisecond))
+
 		if time.Now().After(deadline) {
 			return "filtered", "超时无响应（可能被防火墙过滤）", nil
 		}
