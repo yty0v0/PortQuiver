@@ -166,11 +166,11 @@ func sendNULLPacket(conn net.PacketConn, packet []byte, dstip net.IP) error {
 func listenForNULLResponse(conn net.PacketConn, srcPort, dstPort int, dstip net.IP, timeout time.Duration) (string, string, error) {
 	// 设置总超时
 	deadline := time.Now().Add(timeout)
-	conn.SetReadDeadline(time.Now().Add(200 * time.Millisecond))
 
 	buffer := make([]byte, 4096)
 
 	for {
+		conn.SetReadDeadline(time.Now().Add(200 * time.Millisecond))
 		// 检查是否超时
 		if time.Now().After(deadline) {
 			return "open|filtered", "超时无响应（端口可能开放或被防火墙过滤）", nil
