@@ -31,7 +31,7 @@ go build -o portquiver *.go
 
 ## 使用说明
 ```
-用法：portquiver [选项]
+用法：./portquiver [选项]
 选项:
 -t string    目标地址 (IP/域名)  
 -p string    指定端口 (如: 80,443,1000-2000)
