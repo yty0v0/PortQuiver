@@ -47,9 +47,9 @@ go build -o reconquiver main.go
 -A           全端口扫描 (1-65535)
 -C           常见端口扫描
 
-主机发现模式
+主机探测模式
 选项:
--d           启用主机发现模式
+-d           启用主机探测模式
 -B string    C段探测 (如: 192.168.1.0/24)
 -E string    自定义IP范围探测 (如: 192.168.1.1-100)
 -L           自定义IP列表探测 (逗号分隔或文件路径)
@@ -65,7 +65,7 @@ sudo ./reconquiver -t example.com -A -s A          //对 example.com 的全端�
 ./reconquiver -t 192.168.1.1 -p 80,443,22          //对 192.168.1.1 的 80,443,22 端口进行 CONNECT 扫描
 sudo ./reconquiver -t example.com -C -R 1000 -s S  //对 example.com 的常见端口进行并发 1000 的 SYN 扫描
 
-主机发现:
+主机探测:
 ./reconquiver -d -B 192.168.1.0/24 -m ICP         //对192.168.1.0/24进行C段ICMP-PING探测
 ./reconquiver -d -E 192.168.1.1-100 -m A          //对192.168.1.1-100的主机进行ARP探测
 ./reconquiver -d -L 192.168.1.1,192.168.1.2 -m T  //对192.168.1.1,192.168.1.2两台主机进行探测
