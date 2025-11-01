@@ -20,13 +20,10 @@
 ```
 unzip ReconQuiver-main.zip
 ```
-进入解压完的文件夹下的/cmd/scanner目录
+进入项目目录并编译
 ```
-cd ReconQuiver-main/cmd/scanner
-```
-编译文件
-```
-go build -o reconquiver main.go
+cd ReconQuiver-main
+go build -o reconquiver cmd/scanner/main.go
 ```
 运行程序查看帮助信息，如果显示帮助信息说明安装成功
 ```
