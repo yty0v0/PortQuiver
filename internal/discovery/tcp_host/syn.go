@@ -19,7 +19,7 @@ type TCPSYNResultSurvival struct {
 // 存储所有结果
 var results_tcpsyn_su []TCPSYNResultSurvival
 
-func Tcp_syn(ipaddres []string, rate int) []TCPSYNResultSurvival {
+func Tcp_syn(ipaddres []string, rate int) {
 	sem := make(chan struct{}, rate) //设置并发控制
 	start := time.Now()
 	fmt.Printf("开始TCP SYN扫描... ")

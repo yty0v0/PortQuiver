@@ -4,19 +4,8 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a6c2e4e1-8dbb-47e9-a9ba-9ef80f581f26" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/scanner/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/scanner/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/discovery/arp_host/arp.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/discovery/arp_host/arp.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/discovery/icmp_host/addressmask.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/discovery/icmp_host/addressmask.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/discovery/icmp_host/ping.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/discovery/icmp_host/ping.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/discovery/icmp_host/timestamp.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/discovery/icmp_host/timestamp.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/discovery/netbios_host/netbios.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/discovery/netbios_host/netbios.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/discovery/oxid_host/oxid.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/discovery/oxid_host/oxid.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/discovery/tcp_host/connect.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/discovery/tcp_host/connect.go" afterDir="false" />
+    <list default="true" id="a6c2e4e1-8dbb-47e9-a9ba-9ef80f581f26" name="Changes" comment="update">
       <change beforePath="$PROJECT_DIR$/internal/discovery/tcp_host/syn.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/discovery/tcp_host/syn.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/discovery/udp_host/connect.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/discovery/udp_host/connect.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -127,6 +116,10 @@
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="update" />
+    <option name="LAST_COMMIT_MESSAGE" value="update" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
