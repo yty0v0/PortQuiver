@@ -70,3 +70,4 @@ sudo ./reconquiver -t example.com -C -R 1000 -s TS  //对 example.com 的常见�
 sudo ./reconquiver -d -B 192.168.1.0/24 -m TS     //对192.168.1.0/24进行C段TCP-SYN探测
 
 
+66

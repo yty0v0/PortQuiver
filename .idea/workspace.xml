@@ -24,9 +24,15 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
     <option name="ROOT_SYNC" value="DONT_SYNC" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "yty0v0"
+  }
+}]]></component>
   <component name="GithubPullRequestsUISettings"><![CDATA[{
   "selectedUrlAndAccountId": {
-    "url": "https://github.com/yty0v0/PortQuiver",
+    "url": "https://github.com/yty0v0/ReconQuiver.git",
     "accountId": "ba4c22c8-6406-418b-bdc0-c0b5ea4b3c6e"
   }
 }]]></component>
