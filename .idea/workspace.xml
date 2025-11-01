@@ -5,7 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a6c2e4e1-8dbb-47e9-a9ba-9ef80f581f26" name="Changes" comment="update">
-      <change beforePath="$PROJECT_DIR$/internal/discovery/tcp_host/syn.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/discovery/tcp_host/syn.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -22,6 +22,16 @@
   <component name="GOROOT" url="file://$USER_HOME$/sdk/go1.25.1" />
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="ROOT_SYNC" value="DONT_SYNC" />
+  </component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/yty0v0/PortQuiver",
+    "accountId": "ba4c22c8-6406-418b-bdc0-c0b5ea4b3c6e"
+  }
+}]]></component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 1
