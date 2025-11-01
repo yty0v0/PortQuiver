@@ -69,5 +69,3 @@ sudo ./reconquiver -t example.com -C -R 1000 -s TS  //对 example.com 的常见�
 ./reconquiver -d -L 192.168.1.1,192.168.1.2 -m T  //对192.168.1.1,192.168.1.2两台主机进行TCP-CONNECT探测
 sudo ./reconquiver -d -B 192.168.1.0/24 -m TS     //对192.168.1.0/24进行C段TCP-SYN探测
 
-
-66
