@@ -16,8 +16,8 @@ type UDPResult struct {
 
 var results_udp []UDPResult
 
-func Udp_connect(ipaddres []string) {
-	sem := make(chan struct{}, 100) // 减少并发数避免竞争
+func Udp_connect(ipaddres []string, rate int) {
+	sem := make(chan struct{}, rate) // 减少并发数避免竞争
 	fmt.Println("开始 UDP 存活扫描...")
 	start := time.Now()
 
