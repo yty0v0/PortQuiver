@@ -13,11 +13,11 @@ import (
 )
 
 // ICMP时间戳探测存活主机
-func Timestamp(ipaddres []string) {
+func Timestamp(ipaddres []string, rate int) {
 	var survival = make(map[string]string) //存储存活的主机
 	fmt.Println("开始ICMP时间戳探测...")
 	start := time.Now()
-	sem := make(chan struct{}, 50)
+	sem := make(chan struct{}, rate)
 
 	for i, ipaddr := range ipaddres {
 		scanner.Wg.Add(1)

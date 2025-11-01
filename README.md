@@ -1,10 +1,8 @@
-# ReconQuiver - "侦察袖箭"，一款轻量化端口扫描工具
+# ReconQuiver - "侦察袖箭"，一款轻量化端口扫描和主机探测工具
 
 ## 简介
 基于Go编写的轻量化端口扫描工具，支持多种扫描技术。
-
 各种模式和方法可以自由切换和选择，使用简单，代码通俗易懂，并附有详细注释，方便基于该工具进行再次改进和功能添加。
-
 目前只支持Linux/系统，以下模式需要使用管理员权限运行：TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL。
 
 ### 端口扫描
@@ -20,15 +18,15 @@
 ## 安装
 直接下载zip压缩包，放到Linux上解压
 ```
-unzip reconQuiver-main.zip
+unzip ReconQuiver-main.zip
 ```
-进入解压完的文件夹
+进入解压完的文件夹下的/cmd/scanner目录
 ```
-cd reconQuiver-main
+cd ReconQuiver-main/cmd/scanner
 ```
-编译所有文件
+编译文件
 ```
-go build -o reconquiver *.go
+go build -o reconquiver main.go
 ```
 运行程序查看帮助信息，如果显示帮助信息说明安装成功
 ```
@@ -47,7 +45,7 @@ go build -o reconquiver *.go
 -A           全端口扫描 (1-65535)
 -C           常见端口扫描
 
-主机发现模式
+主机探测模式
 选项:
 -d           启用主机发现模式
 -B string    C段探测 (如: 192.168.1.0/24)
@@ -61,14 +59,14 @@ go build -o reconquiver *.go
 示例
 端口扫描:
 ./reconquiver -t example.com -A                    //对 example.com 的全端口进行 CONNECT 扫描
-sudo ./reconquiver -t example.com -A -s A          //对 example.com 的全端口进行 ACK 扫描
+sudo ./reconquiver -t example.com -A -s TA          //对 example.com 的全端口进行 ACK 扫描
 ./reconquiver -t 192.168.1.1 -p 80,443,22          //对 192.168.1.1 的 80,443,22 端口进行 CONNECT 扫描
-sudo ./reconquiver -t example.com -C -R 1000 -s S  //对 example.com 的常见端口进行并发 1000 的 SYN 扫描
+sudo ./reconquiver -t example.com -C -R 1000 -s TS  //对 example.com 的常见端口进行并发 1000 的 SYN 扫描
 
-主机发现:
+主机探测:
 ./reconquiver -d -B 192.168.1.0/24 -m ICP         //对192.168.1.0/24进行C段ICMP-PING探测
 ./reconquiver -d -E 192.168.1.1-100 -m A          //对192.168.1.1-100的主机进行ARP探测
-./reconquiver -d -L 192.168.1.1,192.168.1.2 -m T  //对192.168.1.1,192.168.1.2两台主机进行探测
+./reconquiver -d -L 192.168.1.1,192.168.1.2 -m T  //对192.168.1.1,192.168.1.2两台主机进行TCP-CONNECT探测
 sudo ./reconquiver -d -B 192.168.1.0/24 -m TS     //对192.168.1.0/24进行C段TCP-SYN探测
 
 

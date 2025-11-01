@@ -8,237 +8,198 @@ import (
 	"github.com/yty0v0/ReconQuiver/internal/scanner"
 )
 
-// UDP扫描结果结构
-type UDPResultSurvival struct {
-	IP    string
-	State string
+type UDPResult struct {
+	IP     string
+	State  string
+	Reason string
 }
 
-// UDP端口扫描操作
-func Udp_connect(ipaddres []string) {
-	var results []UDPResultSurvival
-	sem := make(chan struct{}, 500) // 并发控制
+var results_udp []UDPResult
 
-	fmt.Println("开始UDP扫描...")
+func Udp_connect(ipaddres []string) {
+	sem := make(chan struct{}, 100) // 减少并发数避免竞争
+	fmt.Println("开始 UDP 存活扫描...")
 	start := time.Now()
 
+	// 为每个goroutine创建独立的ICMP监听器
 	for _, ipaddr := range ipaddres {
-		//扫描端口不要设置太多，可能会触发目标的防护机制
-		keyPorts := []int{53, 67, 68, 69, 111, 123, 137, 138, 161, 500, 514, 520, 1434, 1900, 3306, 4500, 5353, 5432, 19132, 27015}
+		// 为每个IP尝试多个端口
+		keyPorts := []int{53, 123, 137, 138, 161, 67, 68, 69, 111, 135, 445, 514, 520, 1900}
 		for _, port := range keyPorts {
 			scanner.Wg.Add(1)
-			go func(p int, ipaddr string) {
-				sem <- struct{}{}        // 获取信号量
-				defer func() { <-sem }() // 释放信号量
+			go func(ip string, port int) {
+				sem <- struct{}{}
 				defer scanner.Wg.Done()
+				defer func() { <-sem }()
 
-				check := scanUDPPort(ipaddr, p, 3*time.Second)
-
-				if check {
-					scanner.Mu.Lock()
-					result := UDPResultSurvival{
-						IP:    ipaddr,
-						State: "up",
+				state, reason := udpScanWithICMP(ip, port)
+				if state == "up" {
+					result := UDPResult{
+						IP:     ip,
+						State:  state,
+						Reason: reason,
 					}
-					results = append(results, result)
+					scanner.Mu.Lock()
+					// 检查是否已经记录过这个IP，因为是扫描一个ip的多个端口
+					found := false
+					for _, r := range results_udp {
+						if r.IP == ip {
+							found = true
+							break
+						}
+					}
+					if !found {
+						results_udp = append(results_udp, result)
+					}
 					scanner.Mu.Unlock()
 				}
-
-			}(port, ipaddr)
+			}(ipaddr, port)
 		}
 	}
 	scanner.Wg.Wait()
 
-	// 输出扫描结果
-	fmt.Println("\n扫描结果:")
-	fmt.Println("IP地址\t\t状态")
-	//fmt.Println("----\t----\t\t----")
-	had := make(map[string]int) //去重用
-	for _, result := range results {
-		//过滤重复记录的ip地址
-		if had[result.IP] == 0 {
-			fmt.Printf("%s\t%s\n", result.IP, result.State)
+	// 输出结果
+	fmt.Println("\n存活主机列表：")
+	fmt.Println("IP地址\t\t状态\t原因")
+	results := make(map[string]int)
+	for _, v := range results_udp {
+		if results[v.IP] == 0 {
+			fmt.Printf("%s\t%s\t%s\n", v.IP, v.State, v.Reason)
 		}
-		had[result.IP]++
+		results[v.IP]++
 	}
-
-	usetime := time.Since(start)
-	fmt.Println()
-	fmt.Printf("扫描完成，耗时: %v\n", usetime)
+	fmt.Printf("\n共发现 %d 台存活主机\n", len(results_udp))
+	fmt.Printf("运行时间: %v\n", time.Since(start))
 }
 
-// UDP端口扫描函数
-func scanUDPPort(ip string, port int, timeout time.Duration) bool {
+// UDP扫描并监听ICMP响应 - 每个goroutine独立的连接
+func udpScanWithICMP(target string, port int) (string, string) {
+	targetIP := net.ParseIP(target)
+	if targetIP == nil {
+		return "down", "invalid_ip"
+	}
 
-	// 构造目标地址
-	target := fmt.Sprintf("%s:%d", ip, port)
+	// 首先创建独立的ICMP监听器
+	icmpConn, err := net.ListenPacket("ip4:icmp", "0.0.0.0")
+	if err != nil {
+		return "down", "icmp_listen_failed"
+	}
+	defer icmpConn.Close()
 
 	// 创建UDP连接
-	conn, err := net.DialTimeout("udp", target, timeout)
+	address := fmt.Sprintf("%s:%d", target, port)
+	udpConn, err := net.DialTimeout("udp", address, 2*time.Second)
 	if err != nil {
-		return false
+		return "down", "udp_conn_failed"
 	}
-	defer conn.Close()
+	defer udpConn.Close()
 
-	// 发送探测数据
+	// 通过UDP连接发送探测数据（不同服务可能需要不同的数据）
 	probeData := getProbeData(port)
-	_, err = conn.Write(probeData)
+	_, err = udpConn.Write(probeData)
 	if err != nil {
-		return false
+		return "down", "udp_send_failed"
 	}
-
-	buffer := make([]byte, 1024)
 
 	//设置总超时
-	deadline := time.Now().Add(timeout)
+	deadline := time.Now().Add(2 * time.Second)
 
 	for {
-		// 设置读写超时
-		conn.SetDeadline(time.Now().Add(200 * time.Millisecond))
-
-		//总读取超时直接返回
 		if time.Now().After(deadline) {
-			// 超时，可能是开放或被过滤
-			return false
+			return "down", "timeout"
 		}
 
-		// 尝试接收UDP响应
-		n, err := conn.Read(buffer)
+		// 设置icmp和udp响应的读取超时
+		icmpConn.SetReadDeadline(time.Now().Add(300 * time.Millisecond))
+		udpConn.SetReadDeadline(time.Now().Add(300 * time.Millisecond))
 
+		// 先尝试接收UDP响应（端口开放）
+		response := make([]byte, 1024)
+		n, err := udpConn.Read(response)
+		if err == nil && n > 0 {
+			return "up", fmt.Sprintf("udp_open_%d", port)
+		}
+
+		//然后尝试接受收icmp响应
+		buffer := make([]byte, 1500)
+		n, addr, err := icmpConn.ReadFrom(buffer)
 		if err != nil {
-			// 检查是否是超时错误
 			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-				//短超时直接下一轮循环
-				continue
-			} else {
-				return false
+				continue // 短超时，继续等待
 			}
-		} else {
-			// 收到响应，端口开放
-			if n > 0 {
-				//fmt.Printf("端口 %d 收到响应，长度: %d 字节\n", port, n)
-				return true
+			return "down", "icmp_read_failed"
+		}
+
+		// 检查是否来自目标IP
+		remoteIP, ok := addr.(*net.IPAddr)
+		if !ok || !remoteIP.IP.Equal(targetIP) {
+			continue
+		}
+
+		// 解析ICMP包
+		if n >= 8 {
+			// 确保收到完整的ICMP头部（8字节)
+			// ICMP Type 3 = Destination Unreachable
+			// Code 3 = Port Unreachable
+			if buffer[0] == 3 && buffer[1] == 3 {
+				return "up", fmt.Sprintf("icmp_port_unreachable_%d", port)
+			}
+			// 其他Destination Unreachable对应的错误也说明主机存活
+			if buffer[0] == 3 {
+				return "up", "icmp_dest_unreachable"
+			}
+			//Type = 11: Time Exceeded
+			//含义: TTL超时，证明数据包在网络中传输，有路由器在响应
+			if buffer[0] == 11 {
+				return "up", "icmp_time_exceeded"
 			}
 		}
 	}
+
+	return "down", "no_response"
 }
 
-// 探测数据
+// 根据端口返回不同的探测数据
 func getProbeData(port int) []byte {
 	switch port {
-	case 53: // DNS
-		return []byte{
-			0x12, 0x34, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x07, 'e', 'x', 'a',
-			'm', 'p', 'l', 'e', 0x03, 'c', 'o', 'm', 0x00,
-			0x00, 0x01, 0x00, 0x01,
-		}
-	case 111: // RPC portmap - 使用NULL调用
-		return []byte{
-			0x00, 0x00, 0x00, 0x00, // XID
-			0x00, 0x00, 0x00, 0x00, // Message Type: Call (0)
-			0x00, 0x00, 0x00, 0x02, // RPC Version: 2
-			0x00, 0x00, 0x00, 0x00, // Program: 0 (NULL测试)
-			0x00, 0x00, 0x00, 0x00, // Program Version: 0
-			0x00, 0x00, 0x00, 0x00, // Procedure: NULL (0)
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		}
-	case 123: // NTP
-		return []byte{0x1B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
-	case 161: // SNMP
-		return []byte{0x30, 0x29, 0x02, 0x01, 0x00, 0x04, 0x06, 0x70, 0x75, 0x62, 0x6C, 0x69, 0x63, 0xA0, 0x1C, 0x02, 0x04, 0x71, 0x97, 0x81, 0x75, 0x02, 0x01, 0x00, 0x02, 0x01, 0x00, 0x30, 0x0E, 0x30, 0x0C, 0x06, 0x08, 0x2B, 0x06, 0x01, 0x02, 0x01, 0x01, 0x01, 0x00, 0x05, 0x00}
-	case 137: // NetBIOS Name Service
-		return []byte{
-			0x12, 0x34, // Transaction ID
-			0x00, 0x00, // Flags: Query
-			0x00, 0x01, // Questions: 1
-			0x00, 0x00, // Answer RRs: 0
-			0x00, 0x00, // Authority RRs: 0
-			0x00, 0x00, // Additional RRs: 0
-			// Name: CKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-			0x20, 0x43, 0x4B, 0x41, 0x41, 0x41, 0x41, 0x41,
-			0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41,
-			0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41,
-			0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41,
-			0x41, 0x00,
-			0x00, 0x21, // Type: NBSTAT
-			0x00, 0x01, // Class: IN
-		}
-	case 138: // NetBIOS Datagram Service
-		return []byte{
-			0x12, 0x34, // Transaction ID
-			0x01, 0x10, // Flags: Response + Authoritative
-			0x00, 0x01, // Questions: 1
-			0x00, 0x01, // Answers: 1
-			0x00, 0x00, // Authority RRs: 0
-			0x00, 0x00, // Additional RRs: 0
-			// Query Name
-			0x20, 0x43, 0x4B, 0x41, 0x41, 0x41, 0x41, 0x41,
-			0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41,
-			0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41,
-			0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41,
-			0x41, 0x00,
-			0x00, 0x21, // Type: NBSTAT
-			0x00, 0x01, // Class: IN
-		}
-	case 1434: // SQL Server Resolution Protocol
-		return []byte{0x02} // 最简单的探测包
-	case 3306: // MySQL (UDP模式)
-		return []byte{
-			0x45, 0x00, 0x00, 0x40, // 基础MySQL握手探测
-			0x00, 0x01, 0x00, 0x00,
-			0x40, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00,
-		}
-	case 5432: // PostgreSQL
-		return []byte{
-			0x00, 0x00, 0x00, 0x08, // Length: 8
-			0x00, 0x03, 0x00, 0x00, // Cancel request
-		}
-	case 1900: // SSDP (Simple Service Discovery Protocol)
+	case 53: // DNS - 查询根域名
+		return []byte{0x00, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+
+	case 161: // SNMP - 有效的get-request
+		return []byte{0x30, 0x29, 0x02, 0x01, 0x00, 0x04, 0x06, 0x70, 0x75, 0x62, 0x6c, 0x69, 0x63}
+
+	case 123: // NTP - 模式3(客户端)请求
+		return []byte{0x1b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+
+	case 137, 138: // NetBIOS - 名称查询
+		return []byte{0x80, 0x00, 0x00, 0x10, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x43, 0x4b, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x00, 0x00, 0x21, 0x00, 0x01}
+
+	case 67, 68: // DHCP - 发现包
+		return []byte{0x01, 0x01, 0x06, 0x00}
+
+	case 69: // TFTP - 读请求
+		return []byte{0x00, 0x01, 0x66, 0x69, 0x6c, 0x65, 0x6e, 0x61, 0x6d, 0x65, 0x00, 0x6f, 0x63, 0x74, 0x65, 0x74, 0x00}
+
+	case 111: // RPC - portmap查询
+		return []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01, 0x86, 0xA0}
+
+	case 135: // MSRPC - 端点映射
+		return []byte{0x05, 0x00, 0x0B, 0x03, 0x10, 0x00, 0x00, 0x00}
+
+	case 445: // SMB - 协商协议
+		return []byte{0x00, 0x00, 0x00, 0x85, 0xFF, 0x53, 0x4D, 0x42, 0x72, 0x00, 0x00, 0x00, 0x00, 0x18, 0x53, 0xC8}
+
+	case 514: // Syslog - 测试消息
+		return []byte("<0>Test Syslog Message")
+
+	case 520: // RIP - 请求
+		return []byte{0x01, 0x01, 0x00, 0x00}
+
+	case 1900: // SSDP - 发现请求
 		return []byte("M-SEARCH * HTTP/1.1\r\nHost: 239.255.255.250:1900\r\nMan: \"ssdp:discover\"\r\nMX: 3\r\nST: ssdp:all\r\n\r\n")
-	case 5353: // mDNS (Multicast DNS)
-		return []byte{
-			0x00, 0x00, // Transaction ID
-			0x00, 0x00, // Flags: Query
-			0x00, 0x01, // Questions: 1
-			0x00, 0x00, // Answers: 0
-			0x00, 0x00, // Authority RRs: 0
-			0x00, 0x00, // Additional RRs: 0
-			// _services._dns-sd._udp.local
-			0x09, '_', 's', 'e', 'r', 'v', 'i', 'c', 'e', 's',
-			0x07, '_', 'd', 'n', 's', '-', 's', 'd',
-			0x04, '_', 'u', 'd', 'p',
-			0x05, 'l', 'o', 'c', 'a', 'l', 0x00,
-			0x00, 0x0C, // Type: PTR
-			0x00, 0x01, // Class: IN
-		}
-	case 27015: // Steam
-		return []byte{
-			0xFF, 0xFF, 0xFF, 0xFF, // -1
-			0x54,                                                                                                                   // 'T'
-			0x53, 0x6F, 0x75, 0x72, 0x63, 0x65, 0x20, 0x45, 0x6E, 0x67, 0x69, 0x6E, 0x65, 0x20, 0x51, 0x75, 0x65, 0x72, 0x79, 0x00, // "Source Engine Query"
-		}
-	case 19132: // Minecraft
-		return []byte{
-			0x01,                                           // Packet ID: Unconnected Ping
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Timestamp
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Magic
-		}
+
 	default:
-		// 对于未知端口，发送多种通用探测数据
-		if port < 1024 {
-			// 系统服务端口，发送空包
-			return []byte{}
-		} else if port < 10000 {
-			// 常见应用端口，发送HTTP-like探测
-			return []byte("GET / HTTP/1.0\r\n\r\n")
-		} else {
-			// 高端口号，发送二进制探测
-			return []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05}
-		}
+		// 对于未知端口，发送更有意义的数据
+		return []byte("PING")
 	}
 }

@@ -2,25 +2,25 @@ package tcp_host
 
 import (
 	"fmt"
+	"net"
+	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/yty0v0/ReconQuiver/internal/scanner"
-
-	"net"
-	"time"
 )
 
 type TCPSYNResultSurvival struct {
-	IP    string
-	State string
+	IP     string
+	State  string
+	Reason string // 添加原因字段
 }
 
 // 存储所有结果
 var results_tcpsyn_su []TCPSYNResultSurvival
 
-func Tcp_syn(ipaddres []string) {
-	sem := make(chan struct{}, 500) //设置并发控制
+func Tcp_syn(ipaddres []string, rate int) []TCPSYNResultSurvival {
+	sem := make(chan struct{}, rate) //设置并发控制
 	start := time.Now()
 	fmt.Printf("开始TCP SYN扫描... ")
 	for _, ipaddr := range ipaddres {
@@ -32,12 +32,13 @@ func Tcp_syn(ipaddres []string) {
 				sem <- struct{}{}
 				defer scanner.Wg.Done()
 				defer func() { <-sem }()
-				check := SynScan(ip, j)
-				if check {
+				state, reason := SynScan(ip, j)
+				if state != "down" {
 					// 创建新的结果实例（避免共享变量）
 					result := TCPSYNResultSurvival{
-						IP:    ip,
-						State: "up",
+						IP:     ip,
+						State:  state,
+						Reason: reason,
 					}
 
 					scanner.Mu.Lock()
@@ -50,14 +51,14 @@ func Tcp_syn(ipaddres []string) {
 	scanner.Wg.Wait()
 
 	fmt.Println("\n扫描结果:")
-	fmt.Println("IP地址\t\t状态")
+	fmt.Println("IP地址\t\t状态\t原因")
 	results := make(map[string]int)
 	sum := 0 //记录存活主机数量
 	for _, v := range results_tcpsyn_su {
 		//过滤重复记录的ip地址
 		if results[v.IP] == 0 {
 			sum++
-			fmt.Printf("%s\t%s\n", v.IP, v.State)
+			fmt.Printf("%s\t%s\t%s\n", v.IP, v.State, v.Reason)
 		}
 		results[v.IP]++
 	}
@@ -67,17 +68,17 @@ func Tcp_syn(ipaddres []string) {
 	fmt.Printf("运行时间：%v 秒 \n", usetime)
 }
 
-// 构造SYN数据包并进行探测
-func SynScan(dstIp string, dstPort int) bool {
+// 构造SYN数据包并进行探测，返回状态和原因
+func SynScan(dstIp string, dstPort int) (string, string) {
 	srcIp, srcPort, err := scanner.GetlocalIPPort(dstIp) //获取本地的出口ip和端口
 	if err != nil {
-		return false
+		return "down", "local_ip_error"
 	}
 
 	dstAddrs, _ := net.LookupIP(dstIp)
 	dstip, err := scanner.SelectIPv4(dstAddrs)
 	if err != nil {
-		return false
+		return "down", "dst_ip_error"
 	}
 
 	dstport := layers.TCPPort(dstPort)
@@ -107,17 +108,17 @@ func SynScan(dstIp string, dstPort int) bool {
 	}
 
 	if err := gopacket.SerializeLayers(buf, opts, tcp); err != nil {
-		return false
+		return "down", "serialize_error"
 	}
 
 	conn, err := net.ListenPacket("ip4:tcp", "0.0.0.0")
 	if err != nil {
-		return false
+		return "down", "conn_error"
 	}
 	defer conn.Close()
 
 	if _, err := conn.WriteTo(buf.Bytes(), &net.IPAddr{IP: dstip}); err != nil {
-		return false
+		return "down", "send_error"
 	}
 
 	deadline := time.Now().Add(4 * time.Second) //设置for循环操作的总超时
@@ -126,7 +127,7 @@ func SynScan(dstIp string, dstPort int) bool {
 	for {
 		conn.SetDeadline(time.Now().Add(200 * time.Millisecond)) //设置读取超时,100毫秒
 		if time.Now().After(deadline) {                          //总超时到了直接结束
-			return false
+			return "down", "timeout"
 		}
 
 		b := make([]byte, 4096)
@@ -136,7 +137,7 @@ func SynScan(dstIp string, dstPort int) bool {
 			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 				continue // 短超时，继续等待
 			}
-			return false
+			return "down", "read_error"
 		}
 		if addr.(*net.IPAddr).IP.Equal(dstip) {
 
@@ -146,11 +147,23 @@ func SynScan(dstIp string, dstPort int) bool {
 				tcp, _ := tcpLayer.(*layers.TCP)
 
 				if tcp.DstPort == layers.TCPPort(srcPort) && tcp.SrcPort == layers.TCPPort(dstPort) {
+					// SYN-ACK: 端口开放，主机存活
 					if tcp.SYN && tcp.ACK {
-						return true
-					} else {
-						return false
+						return "up", "port_open"
 					}
+
+					// ACK: 可能是有状态的防火墙
+					if tcp.ACK {
+						return "up", "firewall_ack"
+					}
+
+					// RST: 端口关闭，但主机存活
+					if tcp.RST {
+						return "up", "port_closed_rst"
+					}
+
+					// 不存活
+					return "down", " "
 				}
 			}
 		}

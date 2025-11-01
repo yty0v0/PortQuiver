@@ -15,7 +15,7 @@ type NetBIOSResult struct {
 	Port137 string
 }
 
-func Netbios(ipaddres []string) {
+func Netbios(ipaddres []string, rate int) {
 	var results []NetBIOSResult
 	fmt.Println("开始 NetBIOS 存活主机探测...")
 
@@ -28,7 +28,7 @@ func Netbios(ipaddres []string) {
 
 	// 阶段2: NetBIOS扫描（只对存活主机）
 	fmt.Println("阶段2: NetBIOS扫描...")
-	sem := make(chan struct{}, 50)
+	sem := make(chan struct{}, rate)
 
 	for _, ip := range aliveHosts {
 		scanner.Wg.Add(1)

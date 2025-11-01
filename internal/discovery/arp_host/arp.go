@@ -13,7 +13,7 @@ import (
 )
 
 // ARP扫描函数
-func Arp(targetIPs []string) {
+func Arp(targetIPs []string, rate int) {
 	survival := make(map[string]string)
 
 	// 手动选择接口
@@ -159,8 +159,8 @@ func Arp(targetIPs []string) {
 	}()
 
 	// 发送ARP请求
-	sem := make(chan struct{}, 50) // 减少并发数避免网络拥塞
-	sentCount := 0                 // 统计发送的请求数
+	sem := make(chan struct{}, rate) // 减少并发数避免网络拥塞
+	sentCount := 0                   // 统计发送的请求数
 
 	for i, targetIP := range targetIPs {
 

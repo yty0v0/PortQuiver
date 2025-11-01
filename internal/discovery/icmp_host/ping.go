@@ -12,11 +12,11 @@ import (
 )
 
 // 探测存活主机(icmp探测--ping)
-func Ping(ipaddres []string) {
+func Ping(ipaddres []string, rate int) {
 	var survival = make(map[string]string) //用来存储存活主机地址
 	fmt.Println("开始探测...")
 	start := time.Now()
-	sem := make(chan struct{}, 50) // 创建一个缓冲大小为 20 的信号量 channel，这意味着最多允许 20 个并发 goroutine
+	sem := make(chan struct{}, rate) // 创建一个缓冲大小为 20 的信号量 channel，这意味着最多允许 20 个并发 goroutine
 
 	for i, ipaddr := range ipaddres {
 		scanner.Wg.Add(1)

@@ -13,7 +13,7 @@ import (
 )
 
 // ICMP 地址掩码探测存活主机
-func Addressmask(ipaddres []string) {
+func Addressmask(ipaddres []string, rate int) {
 	// 定义ICMP地址掩码相关常量
 	const (
 		ICMPTypeAddressMaskRequest = 17 // 地址掩码请求
@@ -23,7 +23,7 @@ func Addressmask(ipaddres []string) {
 	var survival = make(map[string]string) // 存储存活主机地址
 	fmt.Println("开始ICMP地址掩码探测...")
 	start := time.Now()
-	sem := make(chan struct{}, 20) // 并发控制，最多20个goroutine
+	sem := make(chan struct{}, rate) // 并发控制，最多20个goroutine
 
 	for i, ipaddr := range ipaddres {
 		scanner.Wg.Add(1)

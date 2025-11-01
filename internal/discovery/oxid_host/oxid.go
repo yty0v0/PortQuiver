@@ -76,14 +76,14 @@ var nullRequest = []byte{
 }
 
 // 简化的 RPC 扫描函数
-func Oxid(ipaddres []string) {
+func Oxid(ipaddres []string, rate int) {
 	var survival = make(map[string]string)
 	fmt.Println("开始 RPC 服务探测...")
 	//fmt.Println("原理: 通过多种方法验证 Windows RPC 服务")
 	//fmt.Println("==============================================")
 
 	start := time.Now()
-	sem := make(chan struct{}, 50)
+	sem := make(chan struct{}, rate)
 
 	for _, ipaddr := range ipaddres {
 		scanner.Wg.Add(1)

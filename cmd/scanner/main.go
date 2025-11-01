@@ -46,7 +46,7 @@ func main() {
 	// 3. 根据模式选择执行主机发现或端口扫描
 	if config.HostDiscovery {
 		// 主机发现模式
-		executeHostDiscovery(config)
+		executeHostDiscovery(config.ScanType, config, config.Rate)
 	} else {
 		// 端口扫描模式
 		executePortScan(config)
@@ -66,7 +66,7 @@ func executePortScan(config *Config) {
 }
 
 // 执行主机发现
-func executeHostDiscovery(config *Config) {
+func executeHostDiscovery(scanType string, config *Config, rate int) {
 	var targets []string
 
 	// 根据不同的目标输入方式获取目标列表
@@ -81,28 +81,44 @@ func executeHostDiscovery(config *Config) {
 		return
 	}
 
-	fmt.Printf("开始主机发现扫描，目标数量: %d, 模式: %s\n", len(targets), config.DiscoveryMode)
+	var mode string
+	switch scanType {
+	case "T":
+		mode = "TCP"
+	case "TS":
+		mode = "SYN"
+	case "TA":
+		mode = "ACK"
+	case "TF":
+		mode = "FIN"
+	case "TN":
+		mode = "NULL"
+	case "U":
+		mode = "UDP"
+	}
+
+	fmt.Printf("开始主机发现扫描，目标数量: %d, 模式: %s\n", len(targets), mode)
 
 	// 根据发现模式调用对应的发现函数
 	switch config.DiscoveryMode {
 	case "ICP":
-		icmp_host.Ping(targets)
+		icmp_host.Ping(targets, rate)
 	case "A":
-		arp_host.Arp(targets)
+		arp_host.Arp(targets, rate)
 	case "T":
-		tcp_host.Tcp_connect(targets)
+		tcp_host.Tcp_connect(targets, rate)
 	case "TS":
-		tcp_host.Tcp_syn(targets)
+		tcp_host.Tcp_syn(targets, rate)
 	case "U":
-		udp_host.Udp_connect(targets)
+		udp_host.Udp_connect(targets, rate)
 	case "ICT":
-		icmp_host.Timestamp(targets)
+		icmp_host.Timestamp(targets, rate)
 	case "ICA":
-		icmp_host.Addressmask(targets)
+		icmp_host.Addressmask(targets, rate)
 	case "O":
-		oxid_host.Oxid(targets)
+		oxid_host.Oxid(targets, rate)
 	case "N":
-		netbios_host.Netbios(targets)
+		netbios_host.Netbios(targets, rate)
 	default:
 		fmt.Printf("不支持的发现模式: %s\n", config.DiscoveryMode)
 	}
@@ -153,14 +169,14 @@ func parseFlags() *Config {
 		fmt.Println("\n示例:")
 		fmt.Println("  端口扫描:")
 		fmt.Println("    ./reconquiver -t example.com -A                   对 example.com 的全端口进行 CONNECT 扫描")
-		fmt.Println("    sudo ./reconquiver -t example.com -A -s A         对 example.com 的全端口进行 ACK 扫描")
+		fmt.Println("    sudo ./reconquiver -t example.com -A -s TA         对 example.com 的全端口进行 ACK 扫描")
 		fmt.Println("    ./reconquiver -t 192.168.1.1 -p 80,443,22         对 192.168.1.1 的 80,443,22 端口进行 CONNECT 扫描")
-		fmt.Println("    sudo ./reconquiver -t example.com -C -R 1000 -s S 对 example.com 的常见端口进行并发 1000 的 SYN 扫描")
+		fmt.Println("    sudo ./reconquiver -t example.com -C -R 1000 -s TS 对 example.com 的常见端口进行并发 1000 的 SYN 扫描")
 
 		fmt.Println("\n  主机发现:")
 		fmt.Println("    ./reconquiver -d -B 192.168.1.0/24 -m ICP	  	   对192.168.1.0/24进行C段ICMP-PING探测")
 		fmt.Println("    ./reconquiver -d -E 192.168.1.1-100 -m A 		   对192.168.1.1-100的主机进行ARP探测")
-		fmt.Println("    ./reconquiver -d -L 192.168.1.1,192.168.1.2 -m T  对192.168.1.1,192.168.1.2两台主机进行探测")
+		fmt.Println("    ./reconquiver -d -L 192.168.1.1,192.168.1.2 -m T  对192.168.1.1,192.168.1.2两台主机进行TCP-CONNECT探测")
 		fmt.Println("    sudo ./reconquiver -d -B 192.168.1.0/24 -m TS     对192.168.1.0/24进行C段TCP-SYN探测")
 	}
 
@@ -191,7 +207,7 @@ func validateConfig(config *Config) error {
 		}
 
 		// 验证发现模式
-		discoveryModes := []string{"ICP", "ARP", "T", "TS", "U", "ICT", "ICA", "O", "N"}
+		discoveryModes := []string{"ICP", "A", "T", "TS", "U", "ICT", "ICA", "O", "N"}
 		validMode := false
 		for _, m := range discoveryModes {
 			if config.DiscoveryMode == m {
