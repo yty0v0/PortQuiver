@@ -28,12 +28,22 @@ func Tcp_ack(target string, ports []int, rate int) {
 
 	fmt.Println("\n扫描结果:")
 	fmt.Println("端口\t状态\t\t说明")
-	//fmt.Println("----\t----\t\t----")
+	unfiltered := 0
+	filtered := 0
+	unknown := 0
 	for _, result := range results {
-		fmt.Printf("%d\t%s\t%s\n", result.Port, result.State, result.Reason)
+		if result.State == "unfiltered" {
+			fmt.Printf("%d\t%s\t%s\n", result.Port, result.State, result.Reason)
+			unfiltered++
+		} else if result.State == "filtered" {
+			filtered++
+		} else {
+			unknown++
+		}
 	}
 	duration := time.Since(start)
 	fmt.Println()
+	fmt.Printf("%d 个端口没被过滤，%d 个端口超时无响应（可能被防火墙过滤），%d 个端口出现错误")
 	fmt.Printf("扫描完成，耗时: %v\n", duration)
 }
 

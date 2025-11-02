@@ -55,14 +55,14 @@ go build -o reconquiver cmd/scanner/main.go
 
 示例
 端口扫描:
-./reconquiver -t example.com -A                    //对 example.com 的全端口进行 CONNECT 扫描
-sudo ./reconquiver -t example.com -A -s TA          //对 example.com 的全端口进行 ACK 扫描
-./reconquiver -t 192.168.1.1 -p 80,443,22          //对 192.168.1.1 的 80,443,22 端口进行 CONNECT 扫描
-sudo ./reconquiver -t example.com -C -R 1000 -s TS  //对 example.com 的常见端口进行并发 1000 的 SYN 扫描
+./reconquiver -t example.com -A                        //对 example.com 的全端口进行 CONNECT 扫描
+sudo ./reconquiver -t example.com -A -s TA             //对 example.com 的全端口进行 ACK 扫描
+./reconquiver -t 192.168.1.1 -p 80,443,22              //对 192.168.1.1 的 80,443,22 端口进行 CONNECT 扫描
+sudo ./reconquiver -t example.com -C -R 1000 -s TS     //对 example.com 的常见端口进行并发 1000 的 SYN 扫描
 
 主机探测:
-./reconquiver -d -B 192.168.1.0/24 -m ICP         //对192.168.1.0/24进行C段ICMP-PING探测
-./reconquiver -d -E 192.168.1.1-100 -m A          //对192.168.1.1-100的主机进行ARP探测
-./reconquiver -d -L 192.168.1.1,192.168.1.2 -m T  //对192.168.1.1,192.168.1.2两台主机进行TCP-CONNECT探测
-sudo ./reconquiver -d -B 192.168.1.0/24 -m TS     //对192.168.1.0/24进行C段TCP-SYN探测
+./reconquiver -d -B 192.168.1.0/24 -m ICP              //对192.168.1.0/24进行C段ICMP-PING探测
+./reconquiver -d -E 192.168.1.1-100 -m A               //对192.168.1.1-100的主机进行ARP探测
+./reconquiver -d -L 192.168.1.1,192.168.1.2 -m T       //对192.168.1.1,192.168.1.2两台主机进行TCP-CONNECT探测
+sudo ./reconquiver -d -B 192.168.1.0/24 -m TS          //对192.168.1.0/24进行C段TCP-SYN探测
 

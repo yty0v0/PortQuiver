@@ -34,7 +34,6 @@ func Netbios(ipaddres []string, rate int) {
 
 			result := netbiosProbe(ip)
 			scanner.Mu.Lock()
-
 			if result.Status == "alive" {
 				results = append(results, result)
 			}
