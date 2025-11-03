@@ -1,8 +1,8 @@
 # ReconQuiver - "侦察袖箭"，一款轻量化端口扫描和主机探测工具
 
 ## 简介
-基于Go编写的轻量化端口扫描工具，支持多种扫描技术。
-各种模式和方法可以自由切换和选择，使用简单，代码通俗易懂，并附有详细注释，方便基于该工具进行再次改进和功能添加。
+基于Go编写的轻量化端口扫描和主机探测工具，支持多种扫描/探测技术。
+各种模式和方法可以自由切换，使用简单，代码通俗易懂，并附有详细注释，方便基于该工具进行再次改进和功能添加。
 目前只支持Linux/系统，以下模式需要使用管理员权限运行：TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)。
 
 ### 端口扫描
@@ -34,8 +34,6 @@ go build -o reconquiver cmd/scanner/main.go
 ```
 用法：./reconquiver [选项]
 
-这些模式需要使用管理员权限运行：TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)。
-
 端口扫描模式
 选项:
 -t string    目标地址 (IP/域名)
@@ -54,6 +52,8 @@ go build -o reconquiver cmd/scanner/main.go
 
 公共选项:
 -R int       并发扫描次数 (默认：500)
+
+这些模式需要使用管理员权限运行：TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)。
 
 端口扫描常用命令:
 ./reconquiver -t traget -A  -R 5000               TCP全端口扫描(推荐并发5000)
