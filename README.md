@@ -3,7 +3,7 @@
 ## 简介
 基于Go编写的轻量化端口扫描工具，支持多种扫描技术。
 各种模式和方法可以自由切换和选择，使用简单，代码通俗易懂，并附有详细注释，方便基于该工具进行再次改进和功能添加。
-目前只支持Linux/系统，以下模式需要使用管理员权限运行：TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL。
+目前只支持Linux/系统，以下模式需要使用管理员权限运行：TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)。
 
 ### 端口扫描
 包括四种扫描方法：全端口扫描，常见端口扫描，自定义端口扫描，自定义端口范围扫描。
@@ -34,6 +34,8 @@ go build -o reconquiver cmd/scanner/main.go
 ```
 用法：./reconquiver [选项]
 
+这些模式需要使用管理员权限运行：TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)。
+
 端口扫描模式
 选项:
 -t string    目标地址 (IP/域名)
@@ -53,16 +55,15 @@ go build -o reconquiver cmd/scanner/main.go
 公共选项:
 -R int       并发扫描次数 (默认：500)
 
-示例
-端口扫描:
-./reconquiver -t example.com -A                        //对 example.com 的全端口进行 CONNECT 扫描
-sudo ./reconquiver -t example.com -A -s TA             //对 example.com 的全端口进行 ACK 扫描
-./reconquiver -t 192.168.1.1 -p 80,443,22              //对 192.168.1.1 的 80,443,22 端口进行 CONNECT 扫描
-sudo ./reconquiver -t example.com -C -R 1000 -s TS     //对 example.com 的常见端口进行并发 1000 的 SYN 扫描
+端口扫描常用命令:
+./reconquiver -t traget -A  -R 5000               TCP全端口扫描(推荐并发5000)
+sudo ./reconquiver -t target -A -s TS -R 200      SYN全端口扫描(推荐并发200)
+./reconquiver -t target -C -s U                   UDP常见端口扫描(使用默认并发500) 
+sudo ./reconquiver -t target -C -s TA -R 5        ACK常见端口扫描(推荐并发5)
 
-主机探测:
-./reconquiver -d -B 192.168.1.0/24 -m ICP              //对192.168.1.0/24进行C段ICMP-PING探测
-./reconquiver -d -E 192.168.1.1-100 -m A               //对192.168.1.1-100的主机进行ARP探测
-./reconquiver -d -L 192.168.1.1,192.168.1.2 -m T       //对192.168.1.1,192.168.1.2两台主机进行TCP-CONNECT探测
-sudo ./reconquiver -d -B 192.168.1.0/24 -m TS          //对192.168.1.0/24进行C段TCP-SYN探测
-
+主机探测常用命令:
+./reconquiver -d -B traget -m A                   ARP模式进行C段探测
+./reconquiver -d -B traget -m ICP            ICMP-PING模式进行C段探测
+./reconquiver -d -B traget -m T                   TCP模式进行C段探测
+sudo ./reconquiver -d -B traget -m TS             TCP-SYN模式进行C段探测
+sudo ./reconquiver -d -B traget -m U              UDP模式进行C段探测

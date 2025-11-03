@@ -82,7 +82,7 @@ func executeHostDiscovery(scanType string, config *Config, rate int) {
 	}
 
 	var mode string
-	switch scanType {
+	switch config.DiscoveryMode {
 	case "T":
 		mode = "TCP"
 	case "TS":

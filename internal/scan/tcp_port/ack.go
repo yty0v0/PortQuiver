@@ -43,7 +43,7 @@ func Tcp_ack(target string, ports []int, rate int) {
 	}
 	duration := time.Since(start)
 	fmt.Println()
-	fmt.Printf("%d 个端口没被过滤，%d 个端口超时无响应（可能被防火墙过滤），%d 个端口出现错误\n", unfiltered, filtered, unknown)
+	fmt.Printf("共发现 %d 个端口没被过滤，%d 个端口超时无响应（可能被防火墙过滤），%d 个端口出现错误\n", unfiltered, filtered, unknown)
 	fmt.Printf("扫描完成，耗时: %v\n", duration)
 }
 
