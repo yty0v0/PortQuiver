@@ -130,8 +130,8 @@ func parseFlags() *Config {
 
 	// 端口扫描参数
 	flag.StringVar(&config.Target, "t", "", "目标地址 (IP/域名)")
-	flag.StringVar(&config.Ports, "p", "", "端口范围 (如: 80,443,1000-2000)")
-	flag.StringVar(&config.ScanType, "s", "T", "扫描类型: T(TCP CONNECT),S(SYN),A(ACK),F(FIN),N(NULL),U(UDP)")
+	flag.StringVar(&config.Ports, "p", "", "指定端口 (如: 80,443,1000-2000)")
+	flag.StringVar(&config.ScanType, "s", "T", "扫描类型选择: T(TCP CONNECT),TS(SYN),TA(ACK),TF(FIN),TN(NULL),U(UDP) (默认: T)")
 	flag.BoolVar(&config.FullScan, "A", false, "全端口扫描 (1-65535)")
 	flag.BoolVar(&config.CommonScan, "C", false, "常见端口扫描")
 
@@ -140,44 +140,48 @@ func parseFlags() *Config {
 	flag.StringVar(&config.CIDR, "B", "", "C段探测 (如: 192.168.1.0/24)")
 	flag.StringVar(&config.IPRange, "E", "", "自定义IP范围探测 (如: 192.168.1.1-100)")
 	flag.StringVar(&config.IPList, "L", "", "自定义IP列表探测 (逗号分隔或文件路径)")
-	flag.StringVar(&config.DiscoveryMode, "m", "ICP", "主机探测模式: A(ARP),ICP(ICMP-PING),ICA(ICMP-ADDRESSMASK),ICT(ICMP-TIMESTAMP),T(TCP-CONNECT),TS(TCP-SYN),U(UDP-CONNECT),N(NETBIOS),O(OXID)")
+	flag.StringVar(&config.DiscoveryMode, "m", "ICP", "主机探测模式类型选择: A(ARP),ICP(ICMP-PING),ICA(ICMP-ADDRESSMASK),ICT(ICMP-TIMESTAMP),T(TCP-CONNECT),TS(TCP-SYN),U(UDP-CONNECT),N(NETBIOS),O(OXID) (默认: ICP)")
 
-	//公共参数
+	// 公共参数
 	flag.IntVar(&config.Rate, "R", 500, "并发扫描次数")
 
 	// 自定义帮助信息显示
 	flag.Usage = func() {
-		fmt.Printf("用法: %s [选项]\n", "./reconquiver")
-		fmt.Println("\n端口扫描模式:")
+		fmt.Printf("用法：%s [选项]\n", "./reconquiver")
+
+		fmt.Println("\n端口扫描模式")
+		fmt.Println("选项:")
 		fmt.Println("  -t string    目标地址 (IP/域名)")
 		fmt.Println("  -p string    指定端口 (如: 80,443,1000-2000)")
 		fmt.Println("  -s string    扫描类型选择: T(TCP CONNECT),TS(SYN),TA(ACK),TF(FIN),TN(NULL),U(UDP) (默认: T)")
 		fmt.Println("  -A           全端口扫描 (1-65535)")
 		fmt.Println("  -C           常见端口扫描")
+
+		fmt.Println("\n主机探测模式")
+		fmt.Println("选项:")
+		fmt.Println("  -d           启用主机发现模式")
+		fmt.Println("  -B string    C段探测 (如: 192.168.1.0/24)")
+		fmt.Println("  -E string    自定义IP范围探测 (如: 192.168.1.1-100)")
+		fmt.Println("  -L string    自定义IP列表探测 (逗号分隔或文件路径)")
+		fmt.Println("  -m string    主机探测模式类型选择: A(ARP),ICP(ICMP-PING),ICA(ICMP-ADDRESSMASK),ICT(ICMP-TIMESTAMP),T(TCP-CONNECT),TS(TCP-SYN),U(UDP-CONNECT),N(NETBIOS),O(OXID) (默认: ICP)")
+
+		fmt.Println("\n公共选项:")
 		fmt.Println("  -R int       并发扫描次数 (默认：500)")
 
-		fmt.Println("\n主机发现模式:")
-		fmt.Println("  -d   启用主机发现模式")
-		fmt.Println("  -B string C段探测 (如: 192.168.1.0/24)")
-		fmt.Println("  -E string 自定义IP范围探测 (如: 192.168.1.1-100)")
-		fmt.Println("  -L  自定义IP列表探测 (逗号分隔或文件路径)")
-		fmt.Println("  -m  主机探测模式类型选择: A(ARP),ICP(ICMP-PING),ICA(ICMP-ADDRESSMASK),ICT(ICMP-TIMESTAMP),T(TCP-CONNECT),TS(TCP-SYN),U(UDP-CONNECT),N(NETBIOS),O(OXID) (默认: ICP)")
+		fmt.Println("\n这些模式需要使用管理员权限运行：TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)。")
 
-		fmt.Println("\n公共选项：")
-		fmt.Println("  -R int       并发扫描次数 (默认：500)")
+		fmt.Println("\n端口扫描常用命令:")
+		fmt.Println("  ./reconquiver -t target -A -R 5000              TCP全端口扫描(推荐并发5000)")
+		fmt.Println("  sudo ./reconquiver -t target -A -s TS -R 200    SYN全端口扫描(推荐并发200)")
+		fmt.Println("  ./reconquiver -t target -C -s U                 UDP常见端口扫描(使用默认并发500)")
+		fmt.Println("  sudo ./reconquiver -t target -C -s TA -R 5      ACK常见端口扫描(推荐并发5)")
 
-		fmt.Println("\n示例:")
-		fmt.Println("  端口扫描:")
-		fmt.Println("    ./reconquiver -t example.com -A                   对 example.com 的全端口进行 CONNECT 扫描")
-		fmt.Println("    sudo ./reconquiver -t example.com -A -s TA         对 example.com 的全端口进行 ACK 扫描")
-		fmt.Println("    ./reconquiver -t 192.168.1.1 -p 80,443,22         对 192.168.1.1 的 80,443,22 端口进行 CONNECT 扫描")
-		fmt.Println("    sudo ./reconquiver -t example.com -C -R 1000 -s TS 对 example.com 的常见端口进行并发 1000 的 SYN 扫描")
-
-		fmt.Println("\n  主机发现:")
-		fmt.Println("    ./reconquiver -d -B 192.168.1.0/24 -m ICP	  	   对192.168.1.0/24进行C段ICMP-PING探测")
-		fmt.Println("    ./reconquiver -d -E 192.168.1.1-100 -m A 		   对192.168.1.1-100的主机进行ARP探测")
-		fmt.Println("    ./reconquiver -d -L 192.168.1.1,192.168.1.2 -m T  对192.168.1.1,192.168.1.2两台主机进行TCP-CONNECT探测")
-		fmt.Println("    sudo ./reconquiver -d -B 192.168.1.0/24 -m TS     对192.168.1.0/24进行C段TCP-SYN探测")
+		fmt.Println("\n主机探测常用命令:")
+		fmt.Println("  ./reconquiver -d -B target -m A                 ARP模式进行C段探测")
+		fmt.Println("  ./reconquiver -d -B target -m ICP               ICMP-PING模式进行C段探测")
+		fmt.Println("  ./reconquiver -d -B target -m T                 TCP模式进行C段探测")
+		fmt.Println("  sudo ./reconquiver -d -B target -m TS           TCP-SYN模式进行C段探测")
+		fmt.Println("  sudo ./reconquiver -d -B target -m U            UDP模式进行C段探测")
 	}
 
 	flag.Parse()
