@@ -63,7 +63,7 @@ sudo ./reconquiver -t target -C -s TA -R 5        ACK常见端口扫描(推荐�
 
 主机探测常用命令:
 ./reconquiver -d -B traget -m A                   ARP模式进行C段探测
-./reconquiver -d -B traget -m ICP            ICMP-PING模式进行C段探测
+./reconquiver -d -B traget -m ICP                 ICMP-PING模式进行C段探测
 ./reconquiver -d -B traget -m T                   TCP模式进行C段探测
 sudo ./reconquiver -d -B traget -m TS             TCP-SYN模式进行C段探测
 sudo ./reconquiver -d -B traget -m U              UDP模式进行C段探测
