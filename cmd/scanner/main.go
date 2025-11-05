@@ -87,14 +87,20 @@ func executeHostDiscovery(scanType string, config *Config, rate int) {
 		mode = "TCP"
 	case "TS":
 		mode = "SYN"
-	case "TA":
-		mode = "ACK"
-	case "TF":
-		mode = "FIN"
-	case "TN":
-		mode = "NULL"
+	case "ICP":
+		mode = "ICMP-PING"
+	case "ICA":
+		mode = "ICMP-ADDRESSMASK"
+	case "ICT":
+		mode = "ICMP-TIMESTAMP"
 	case "U":
 		mode = "UDP"
+	case "N":
+		mode = "NETBIOS"
+	case "O":
+		mode = "OXID"
+	case "A":
+		mode = "ARP"
 	}
 
 	fmt.Printf("开始主机发现扫描，目标数量: %d, 模式: %s\n", len(targets), mode)
@@ -143,7 +149,7 @@ func parseFlags() *Config {
 	flag.StringVar(&config.DiscoveryMode, "m", "ICP", "主机探测模式类型选择: A(ARP),ICP(ICMP-PING),ICA(ICMP-ADDRESSMASK),ICT(ICMP-TIMESTAMP),T(TCP-CONNECT),TS(TCP-SYN),U(UDP-CONNECT),N(NETBIOS),O(OXID) (默认: ICP)")
 
 	// 公共参数
-	flag.IntVar(&config.Rate, "R", 500, "并发扫描次数")
+	flag.IntVar(&config.Rate, "R", 300, "并发扫描次数")
 
 	// 自定义帮助信息显示
 	flag.Usage = func() {
@@ -166,7 +172,7 @@ func parseFlags() *Config {
 		fmt.Println("  -m string    主机探测模式类型选择: A(ARP),ICP(ICMP-PING),ICA(ICMP-ADDRESSMASK),ICT(ICMP-TIMESTAMP),T(TCP-CONNECT),TS(TCP-SYN),U(UDP-CONNECT),N(NETBIOS),O(OXID) (默认: ICP)")
 
 		fmt.Println("\n公共选项:")
-		fmt.Println("  -R int       并发扫描次数 (默认：500)")
+		fmt.Println("  -R int       并发扫描次数 (默认：300)")
 
 		fmt.Println("\n这些模式需要使用管理员权限运行：TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)。")
 
@@ -370,24 +376,6 @@ func getScanMode(scanType string, ipaddres string, port []int, rate int) {
 
 // 获取CIDR目标
 func getCIDRTargets(cidr string) []string {
-	/*
-		var targets []string
-		ip, ipnet, err := net.ParseCIDR(cidr)
-		if err != nil {
-			fmt.Printf("CIDR解析错误: %v\n", err)
-			return targets
-		}
-
-		for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
-			targets = append(targets, ip.String())
-		}
-
-		// 移除网络地址和广播地址
-		if len(targets) > 2 {
-			targets = targets[1 : len(targets)-1]
-		}
-
-	*/
 	var targets []string
 	for i := 1; i <= 254; i++ {
 		target := scanner.Ip_handle1(cidr, i)
@@ -399,43 +387,6 @@ func getCIDRTargets(cidr string) []string {
 
 // 获取IP范围目标
 func getIPRangeTargets(ipRange string) []string {
-	/*
-		var targets []string
-
-		// 解析IP范围格式: 192.168.1.1-100
-		parts := strings.Split(ipRange, "-")
-		if len(parts) != 2 {
-			fmt.Printf("IP范围格式错误: %s\n", ipRange)
-			return targets
-		}
-
-		baseIP := parts[0]
-		endNum, err := strconv.Atoi(parts[1])
-		if err != nil {
-			fmt.Printf("IP范围解析错误: %v\n", err)
-			return targets
-		}
-
-		// 获取基础IP的前三部分
-		ipParts := strings.Split(baseIP, ".")
-		if len(ipParts) != 4 {
-			fmt.Printf("IP地址格式错误: %s\n", baseIP)
-			return targets
-		}
-
-		baseNum, err := strconv.Atoi(ipParts[3])
-		if err != nil {
-			fmt.Printf("IP地址解析错误: %v\n", err)
-			return targets
-		}
-
-		// 生成IP列表
-		for i := baseNum; i <= endNum; i++ {
-			target := fmt.Sprintf("%s.%s.%s.%d", ipParts[0], ipParts[1], ipParts[2], i)
-			targets = append(targets, target)
-		}
-
-	*/
 	var targets []string
 	start, end := scanner.Ip_handle2(ipRange)
 	start1, _ := strconv.Atoi(start) //转换为int类型
@@ -450,35 +401,6 @@ func getIPRangeTargets(ipRange string) []string {
 
 // 获取IP列表目标
 func getIPListTargets(ipList string) []string {
-	/*
-		var targets []string
-
-		// 检查是否是文件
-		if _, err := os.Stat(ipList); err == nil {
-			// 是文件，从文件读取
-			file, err := os.Open(ipList)
-			if err != nil {
-				fmt.Printf("文件打开错误: %v\n", err)
-				return targets
-			}
-			defer file.Close()
-
-			scanner := bufio.NewScanner(file)
-			for scanner.Scan() {
-				ip := strings.TrimSpace(scanner.Text())
-				if ip != "" {
-					targets = append(targets, ip)
-				}
-			}
-		} else {
-			// 是逗号分隔的IP列表
-			targets = strings.Split(ipList, ",")
-			for i, target := range targets {
-				targets[i] = strings.TrimSpace(target)
-			}
-		}
-
-	*/
 	var targets []string
 	targets = strings.Split(ipList, ",")
 	return targets
