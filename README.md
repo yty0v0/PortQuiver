@@ -55,7 +55,8 @@ go build -o reconquiver cmd/scanner/main.go
 公共选项:
 -R int       并发扫描次数 (默认：300，一些模式默认选用其它合适的并发数量)
 
-这些模式需要使用管理员权限运行：TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)。
+以下模式需要使用管理员权限运行：
+TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)
 
 端口扫描常用命令:
 ./reconquiver -t traget -A  -R 5000               TCP全端口扫描(推荐并发5000)
