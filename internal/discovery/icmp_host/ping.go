@@ -11,11 +11,24 @@ import (
 	"golang.org/x/net/ipv4"
 )
 
+type PINGResult struct {
+	IP       string
+	HostInfo string
+	State    string
+	Reason   string
+}
+
+var results_ping []PINGResult //存储所有存活主机
+
 // 探测存活主机(icmp探测--ping)
 func Ping(ipaddres []string, rate int) {
-	var survival = make(map[string]string) //用来存储存活主机地址
 	fmt.Println("开始探测...")
 	start := time.Now()
+
+	//如果rate是默认值，则设置为并发50（并发50的结果更准确）
+	if rate == 300 {
+		rate = 50
+	}
 	sem := make(chan struct{}, rate) // 创建一个缓冲大小为 20 的信号量 channel，这意味着最多允许 20 个并发 goroutine
 
 	for i, ipaddr := range ipaddres {
@@ -87,8 +100,16 @@ func Ping(ipaddres []string, rate int) {
 				echo, ok := rm.Body.(*icmp.Echo) //类型断言检查 Body 是否为 *icmp.Echo。echo：如果类型断言成功，返回转换后的 *icmp.Echo 对象；如果失败，返回该类型的零值（nil）。ok：true 表示类型断言成功，false 表示失败
 				if ok {
 					if echo.ID == pid && echo.Seq == seq {
+
+						result := PINGResult{
+							IP:       Ip,
+							HostInfo: "",
+							State:    "up",
+							Reason:   "收到响应",
+						}
+
 						scanner.Mu.Lock()
-						survival[Ip] = "up"
+						results_ping = append(results_ping, result)
 						scanner.Mu.Unlock()
 					}
 				}
@@ -97,11 +118,38 @@ func Ping(ipaddres []string, rate int) {
 	}
 	scanner.Wg.Wait()
 
+	//获取MAC地址
+	var targetIps []string
+	for _, result := range results_ping {
+		targetIps = append(targetIps, result.IP)
+	}
+	MacResult := scanner.GetMac(targetIps)
+
+	//获取主机信息
+	var datas []scanner.HostInfoResult //HostInfoResult在hostinfo代码里已经定义成全局变量
+	for _, result := range results_ping {
+		data := scanner.HostInfoResult{
+			IP:  result.IP,
+			MAC: MacResult[result.IP],
+		}
+		datas = append(datas, data)
+	}
+	collector := scanner.NewHostInfo() //这一行确实已经调用了函数
+	InfoResult := collector.GetHostInfoBatch(datas)
+
 	fmt.Println("存活主机列表：")
-	fmt.Println("IP地址\t\t状态")
+	//fmt.Println("IP地址\t\tMAC地址\t\t\t主机信息\t\t状态\t\t原因")
 	j := 0
-	for k, v := range survival {
-		fmt.Printf("%s\t%s\n", k, v)
+	for _, v := range results_ping {
+		//fmt.Printf("%s\t%s\t%s\t%s\t%s\n", v.IP, MacResult[v.IP], v.HostInfo, v.State, v.Reason)
+
+		fmt.Printf("IP地址:%s\n", v.IP)
+		fmt.Printf("MAC地址:%s\n", MacResult[v.IP])
+		fmt.Printf("主机信息:%s\n", InfoResult[v.IP])
+		fmt.Printf("主机状态:%s\n", v.State)
+		fmt.Printf("存活原因:%s\n", v.Reason)
+		fmt.Println()
+
 		j++
 	}
 

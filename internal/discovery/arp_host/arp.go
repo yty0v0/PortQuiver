@@ -14,7 +14,7 @@ import (
 
 // ARP扫描函数
 func Arp(targetIPs []string, rate int) {
-	survival := make(map[string]string)
+	arp_survival := make(map[string]string)
 
 	// 手动选择接口
 	iface, err := selectNetworkInterface()
@@ -54,7 +54,7 @@ func Arp(targetIPs []string, rate int) {
 	for _, targetIP := range targetIPs {
 		if targetIP == localIPStr {
 			scanner.Mu.Lock()
-			survival[localIPStr] = localMAC.String()
+			arp_survival[localIPStr] = localMAC.String()
 			scanner.Mu.Unlock()
 			break
 		}
@@ -147,8 +147,8 @@ func Arp(targetIPs []string, rate int) {
 
 					// 记录所有ARP回复
 					scanner.Mu.Lock()
-					if _, exists := survival[senderIP]; !exists {
-						survival[senderIP] = senderMAC
+					if _, exists := arp_survival[senderIP]; !exists {
+						arp_survival[senderIP] = senderMAC
 						fmt.Printf(">>> 发现存活主机: %s -> %s (回复目标IP: %s)\n",
 							senderIP, senderMAC, targetIP)
 					}
@@ -157,6 +157,11 @@ func Arp(targetIPs []string, rate int) {
 			}
 		}
 	}()
+
+	//如果rate是默认值，则设置为并发50（并发50的结果更准确）
+	if rate == 300 {
+		rate = 50
+	}
 
 	// 发送ARP请求
 	sem := make(chan struct{}, rate) // 减少并发数避免网络拥塞
@@ -191,7 +196,7 @@ func Arp(targetIPs []string, rate int) {
 	for {
 		time.Sleep(1 * time.Second)
 		scanner.Mu.Lock()
-		currentCount := len(survival)
+		currentCount := len(arp_survival)
 		scanner.Mu.Unlock()
 
 		// 如果有新发现，更新最后发现时间
@@ -216,9 +221,21 @@ func Arp(targetIPs []string, rate int) {
 	close(stopChan)
 	time.Sleep(500 * time.Millisecond) // 等待goroutine安全退出
 
+	//获取主机信息
+	var datas []scanner.HostInfoResult //HostInfoResult在hostinfo代码里已经定义成全局变量
+	for ip, mac := range arp_survival {
+		data := scanner.HostInfoResult{
+			IP:  ip,
+			MAC: mac,
+		}
+		datas = append(datas, data)
+	}
+	collector := scanner.NewHostInfo() //这一行确实已经调用了函数
+	InfoResult := collector.GetHostInfoBatch(datas)
+
 	// 输出最终结果
 	scanner.Mu.Lock()
-	j := len(survival)
+	j := len(arp_survival)
 	fmt.Println("\n存活主机列表:")
 	if j == 0 {
 		fmt.Println("未发现任何存活主机")
@@ -228,20 +245,21 @@ func Arp(targetIPs []string, rate int) {
 		fmt.Println("3. 企业网络有ARP限制")
 		fmt.Println("4. 防火墙阻止了ARP回复")
 	} else {
-		fmt.Println("IP地址\t\t\tMAC地址\t\t\t\t类型")
+		//fmt.Println("IP地址\t\t\tMAC地址\t\t\t\t类型")
 		//fmt.Println("--------\t-------------------\t--------")
-		for ip, mac := range survival {
-			hostType := "其他主机"
-			if ip == localIPStr {
-				hostType = "本机"
-			}
-			fmt.Printf("%-15s\t%s\t%s\n", ip, mac, hostType)
+		for ip, mac := range arp_survival {
+			//fmt.Printf("%-15s\t%s\t%s\n", ip, mac, hostType)
+
+			fmt.Printf("IP地址:%s\n", ip)
+			fmt.Printf("MAC地址:%s\n", mac)
+			fmt.Printf("主机信息:%s\n", InfoResult[ip])
+			fmt.Println()
 		}
 	}
 	scanner.Mu.Unlock()
 
 	usetime := time.Since(start)
-	fmt.Printf("\n扫描完成:\n")
+	fmt.Printf("扫描完成\n")
 	fmt.Printf("存活主机数量: %d\n", j)
 	fmt.Printf("运行时间: %v\n", usetime)
 

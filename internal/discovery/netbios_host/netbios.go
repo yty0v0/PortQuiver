@@ -10,21 +10,27 @@ import (
 )
 
 type NetBIOSResult struct {
-	IP     string
-	Status string // "alive", "filtered", "dead"
-	Reason string
+	IP       string
+	HostInfo string
+	Status   string // "alive", "filtered", "dead"
+	Reason   string
 }
 
+var results_netbios []NetBIOSResult //存储所有存活主机
+
 func Netbios(ipaddres []string, rate int) {
-	var results []NetBIOSResult
 	fmt.Println("开始 NetBIOS 服务探测...")
 	fmt.Println("探测标准: UDP 137端口开放且NetBIOS服务开放")
 
 	start := time.Now()
 
-	// 直接进行NetBIOS扫描
+	//如果rate是默认值，则设置为并发50（并发50的结果更准确）
+	if rate == 300 {
+		rate = 50
+	}
 	sem := make(chan struct{}, rate)
 
+	// 直接进行NetBIOS扫描
 	for _, ip := range ipaddres {
 		scanner.Wg.Add(1)
 		go func(ip string) {
@@ -33,28 +39,63 @@ func Netbios(ipaddres []string, rate int) {
 			defer func() { <-sem }()
 
 			result := netbiosProbe(ip)
-			scanner.Mu.Lock()
+
 			if result.Status == "alive" {
-				results = append(results, result)
+
+				result1 := NetBIOSResult{
+					IP:       result.IP,
+					HostInfo: "",
+					Status:   result.Status,
+					Reason:   result.Reason,
+				}
+
+				scanner.Mu.Lock()
+				results_netbios = append(results_netbios, result1)
+				scanner.Mu.Unlock()
 			}
-			scanner.Mu.Unlock()
 		}(ip)
 	}
 	scanner.Wg.Wait()
 
+	//获取MAC地址
+	var targetIps []string
+	for _, result := range results_netbios {
+		targetIps = append(targetIps, result.IP)
+	}
+	MacResult := scanner.GetMac(targetIps)
+
+	//获取主机信息
+	var datas []scanner.HostInfoResult //HostInfoResult在hostinfo代码里已经定义成全局变量
+	for _, result := range results_netbios {
+		data := scanner.HostInfoResult{
+			IP:  result.IP,
+			MAC: MacResult[result.IP],
+		}
+		datas = append(datas, data)
+	}
+	collector := scanner.NewHostInfo() //这一行确实已经调用了函数
+	InfoResult := collector.GetHostInfoBatch(datas)
+
 	// 输出结果
-	if len(results) > 0 {
+	if len(results_netbios) > 0 {
 		fmt.Println("\nNetBIOS 服务发现：")
-		fmt.Println("IP地址\t\t状态\t\t存活原因")
-		for _, result := range results {
-			fmt.Printf("%s\t%s\t\t%s\n", result.IP, result.Status, result.Reason)
+		//fmt.Println("IP地址\t\tMAC地址\t\t\t主机信息\t\t状态\t\t原因")
+		for _, v := range results_netbios {
+			//fmt.Printf("%s\t%s\t%s\t%s\t%s\n", v.IP, MacResult[v.IP], v.HostInfo, v.Status, v.Reason)
+
+			fmt.Printf("IP地址:%s\n", v.IP)
+			fmt.Printf("MAC地址:%s\n", MacResult[v.IP])
+			fmt.Printf("主机信息:%s\n", InfoResult[v.IP])
+			fmt.Printf("主机状态:%s\n", v.Status)
+			fmt.Printf("存活原因:%s\n", v.Reason)
+			fmt.Println()
 		}
 	} else {
 		fmt.Println("未发现 NetBIOS 服务")
 	}
 
-	fmt.Printf("\n扫描完成，耗时: %v\n", time.Since(start))
-	fmt.Printf("发现 %d 个 NetBIOS 服务\n", len(results))
+	fmt.Printf("扫描完成，耗时: %v\n", time.Since(start))
+	fmt.Printf("发现 %d 个 NetBIOS 服务\n", len(results_netbios))
 }
 
 // 使用 net.DialTimeout 方式的 NetBIOS 探测函数

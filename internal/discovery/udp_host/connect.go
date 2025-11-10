@@ -9,15 +9,22 @@ import (
 )
 
 type UDPResult struct {
-	IP     string
-	State  string
-	Reason string
+	IP       string
+	HostInfo string
+	State    string
+	Reason   string
 }
 
-var results_udp []UDPResult
+var results_udp_survival []UDPResult //存储所有存活主机
 
 func Udp_connect(ipaddres []string, rate int) {
+
+	//如果rate是默认值，则设置为并100（并发100的结果更准确）
+	if rate == 300 {
+		rate = 100
+	}
 	sem := make(chan struct{}, rate) // 减少并发数避免竞争
+
 	fmt.Println("开始 UDP 存活扫描...")
 	start := time.Now()
 
@@ -34,22 +41,24 @@ func Udp_connect(ipaddres []string, rate int) {
 
 				state, reason := udpScanWithICMP(ip, port)
 				if state == "up" {
+
 					result := UDPResult{
-						IP:     ip,
-						State:  state,
-						Reason: reason,
+						IP:       ip,
+						HostInfo: "",
+						State:    state,
+						Reason:   reason,
 					}
 					scanner.Mu.Lock()
 					// 检查是否已经记录过这个IP，因为是扫描一个ip的多个端口
 					found := false
-					for _, r := range results_udp {
+					for _, r := range results_udp_survival {
 						if r.IP == ip {
 							found = true
 							break
 						}
 					}
 					if !found {
-						results_udp = append(results_udp, result)
+						results_udp_survival = append(results_udp_survival, result)
 					}
 					scanner.Mu.Unlock()
 				}
@@ -58,17 +67,43 @@ func Udp_connect(ipaddres []string, rate int) {
 	}
 	scanner.Wg.Wait()
 
+	//获取MAC地址
+	var targetIps []string
+	for _, result := range results_udp_survival {
+		targetIps = append(targetIps, result.IP)
+	}
+	MacResult := scanner.GetMac(targetIps)
+
+	//获取主机信息
+	var datas []scanner.HostInfoResult //HostInfoResult在hostinfo代码里已经定义成全局变量
+	for _, result := range results_udp_survival {
+		data := scanner.HostInfoResult{
+			IP:  result.IP,
+			MAC: MacResult[result.IP],
+		}
+		datas = append(datas, data)
+	}
+	collector := scanner.NewHostInfo() //这一行确实已经调用了函数
+	InfoResult := collector.GetHostInfoBatch(datas)
+
 	// 输出结果
 	fmt.Println("\n存活主机列表：")
-	fmt.Println("IP地址\t\t状态\t原因")
+	//fmt.Println("IP地址\t\tMAC地址\t\t\t主机信息\t\t状态\t\t原因")
 	results := make(map[string]int)
-	for _, v := range results_udp {
+	for _, v := range results_udp_survival {
 		if results[v.IP] == 0 {
-			fmt.Printf("%s\t%s\t%s\n", v.IP, v.State, v.Reason)
+			//fmt.Printf("%s\t%s\t%s\t%s\t%s\n", v.IP, MacResult[v.IP], v.HostInfo, v.State, v.Reason)
+
+			fmt.Printf("IP地址:%s\n", v.IP)
+			fmt.Printf("MAC地址:%s\n", MacResult[v.IP])
+			fmt.Printf("主机信息:%s\n", InfoResult[v.IP])
+			fmt.Printf("主机状态:%s\n", v.State)
+			fmt.Printf("存活原因:%s\n", v.Reason)
+			fmt.Println()
 		}
 		results[v.IP]++
 	}
-	fmt.Printf("\n共发现 %d 台存活主机\n", len(results_udp))
+	fmt.Printf("共发现 %d 台存活主机\n", len(results_udp_survival))
 	fmt.Printf("运行时间: %v\n", time.Since(start))
 }
 

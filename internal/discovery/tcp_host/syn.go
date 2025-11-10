@@ -2,22 +2,23 @@ package tcp_host
 
 import (
 	"fmt"
-	"net"
-	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/yty0v0/ReconQuiver/internal/scanner"
+
+	"net"
+	"time"
 )
 
 type TCPSYNResultSurvival struct {
-	IP     string
-	State  string
-	Reason string // 添加原因字段
+	IP       string
+	HostInfo string
+	State    string
+	Reason   string
 }
 
-// 存储所有结果
-var results_tcpsyn_su []TCPSYNResultSurvival
+var results_tcpsyn_su []TCPSYNResultSurvival //存储所有存活主机
 
 func Tcp_syn(ipaddres []string, rate int) {
 	sem := make(chan struct{}, rate) //设置并发控制
@@ -34,11 +35,13 @@ func Tcp_syn(ipaddres []string, rate int) {
 				defer func() { <-sem }()
 				state, reason := SynScan(ip, j)
 				if state != "down" {
+
 					// 创建新的结果实例（避免共享变量）
 					result := TCPSYNResultSurvival{
-						IP:     ip,
-						State:  state,
-						Reason: reason,
+						IP:       ip,
+						HostInfo: "",
+						State:    state,
+						Reason:   reason,
 					}
 
 					scanner.Mu.Lock()
@@ -50,15 +53,40 @@ func Tcp_syn(ipaddres []string, rate int) {
 	}
 	scanner.Wg.Wait()
 
+	//获取MAC地址
+	var targetIps []string
+	for _, result := range results_tcpsyn_su {
+		targetIps = append(targetIps, result.IP)
+	}
+	MacResult := scanner.GetMac(targetIps)
+
+	//获取主机信息
+	var datas []scanner.HostInfoResult //HostInfoResult在hostinfo代码里已经定义成全局变量
+	for _, result := range results_tcpsyn_su {
+		data := scanner.HostInfoResult{
+			IP:  result.IP,
+			MAC: MacResult[result.IP],
+		}
+		datas = append(datas, data)
+	}
+	collector := scanner.NewHostInfo() //这一行确实已经调用了函数
+	InfoResult := collector.GetHostInfoBatch(datas)
+
 	fmt.Println("\n扫描结果:")
-	fmt.Println("IP地址\t\t状态\t原因")
+	//fmt.Println("IP地址\t\tMAC地址\t\t\t主机信息\t\t状态\t\t原因")
 	results := make(map[string]int)
 	sum := 0 //记录存活主机数量
 	for _, v := range results_tcpsyn_su {
 		//过滤重复记录的ip地址
 		if results[v.IP] == 0 {
 			sum++
-			fmt.Printf("%s\t%s\t%s\n", v.IP, v.State, v.Reason)
+			//fmt.Printf("%s\t%s\t%s\t%s\t%s\n", v.IP, MacResult[v.IP], v.HostInfo, v.State, v.Reason)
+			fmt.Printf("IP地址:%s\n", v.IP)
+			fmt.Printf("MAC地址:%s\n", MacResult[v.IP])
+			fmt.Printf("主机信息:%s\n", InfoResult[v.IP])
+			fmt.Printf("主机状态:%s\n", v.State)
+			fmt.Printf("存活原因:%s\n", v.Reason)
+			fmt.Println()
 		}
 		results[v.IP]++
 	}

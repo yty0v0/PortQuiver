@@ -10,19 +10,18 @@ import (
 )
 
 type TCPCONNECTResult2 struct {
-	scanip string
-	State  string
-	Reason string // 添加原因字段
+	scanip   string
+	Hostname string
+	State    string
+	Reason   string // 添加原因字段
 }
 
-// 存储所有主机存活探测的扫描结果
-var results_tcpconnect2 []TCPCONNECTResult2
+var results_tcpconnect2 []TCPCONNECTResult2 // 存储所有主机存活探测的扫描结果
 
 // TCP CONNECT 主机存活扫描操作
 func Tcp_connect(ipaddres []string, rate int) {
 	sem := make(chan struct{}, rate)
 	fmt.Println("开始 TCP CONNECT 扫描...")
-	fmt.Println()
 	start := time.Now()
 
 	for _, ipaddr := range ipaddres { //外层遍历ip地址
@@ -39,11 +38,13 @@ func Tcp_connect(ipaddres []string, rate int) {
 				conn, err := net.DialTimeout("tcp", addres, time.Second*3)
 
 				if err == nil {
+
 					// 连接成功 - 主机存活且端口开放
 					result := TCPCONNECTResult2{
-						scanip: ip,
-						State:  "up",
-						Reason: "port_open",
+						scanip:   ip,
+						Hostname: "",
+						State:    "up",
+						Reason:   "port_open",
 					}
 					scanner.Mu.Lock()
 					results_tcpconnect2 = append(results_tcpconnect2, result)
@@ -59,11 +60,13 @@ func Tcp_connect(ipaddres []string, rate int) {
 				if strings.Contains(errStr, "refused") ||
 					strings.Contains(errStr, "reset") ||
 					strings.Contains(errStr, "RST") {
+
 					// RST包 - 主机存活但端口关闭
 					result := TCPCONNECTResult2{
-						scanip: ip,
-						State:  "up",
-						Reason: "port_closed_rst",
+						scanip:   ip,
+						Hostname: "",
+						State:    "up",
+						Reason:   "port_closed_rst",
 					}
 					scanner.Mu.Lock()
 					results_tcpconnect2 = append(results_tcpconnect2, result)
@@ -86,15 +89,41 @@ func Tcp_connect(ipaddres []string, rate int) {
 	}
 	scanner.Wg.Wait()
 
+	//获取MAC地址
+	var targetIps []string
+	for _, result := range results_tcpconnect2 {
+		targetIps = append(targetIps, result.scanip)
+	}
+	MacResult := scanner.GetMac(targetIps)
+
+	//获取主机信息
+	var datas []scanner.HostInfoResult //HostInfoResult在hostinfo代码里已经定义成全局变量
+	for _, result := range results_tcpconnect2 {
+		data := scanner.HostInfoResult{
+			IP:  result.scanip,
+			MAC: MacResult[result.scanip],
+		}
+		datas = append(datas, data)
+	}
+	collector := scanner.NewHostInfo() //这一行确实已经调用了函数
+	InfoResult := collector.GetHostInfoBatch(datas)
+
 	sum := 0 //统计存活的主机数
 	fmt.Println("存活主机列表：")
-	fmt.Println("IP地址\t\t状态\t原因")
+	//fmt.Println("IP地址\t\tMAC地址\t\t\t状态\t\t原因\t\t主机信息")
 	results := make(map[string]int)
 	for _, v := range results_tcpconnect2 {
 		//过滤掉重复记录的主机
 		if results[v.scanip] == 0 {
 			sum++
-			fmt.Printf("%s\t%s\t%s\n", v.scanip, v.State, v.Reason)
+			//fmt.Printf("%s\t%s\t%s\t%s\t%s\n", v.scanip, MacResult[v.scanip], InfoResult[v.scanip], v.State, v.Reason)
+
+			fmt.Printf("IP地址:%s\n", v.scanip)
+			fmt.Printf("MAC地址:%s\n", MacResult[v.scanip])
+			fmt.Printf("主机信息:%s\n", InfoResult[v.scanip])
+			fmt.Printf("主机状态:%s\n", v.State)
+			fmt.Printf("存活原因:%s\n", v.Reason)
+			fmt.Println()
 		}
 		results[v.scanip]++
 	}

@@ -8,6 +8,13 @@ import (
 	"github.com/yty0v0/ReconQuiver/internal/scanner"
 )
 
+type OXIDResult struct {
+	IP       string
+	HostInfo string
+	State    string
+	Reason   string
+}
+
 // 使用更通用的 RPC 绑定请求 - EPM (Endpoint Mapper)
 var epmBindRequest = []byte{
 	// RPC Bind Header
@@ -75,14 +82,18 @@ var nullRequest = []byte{
 	0x00, 0x00, 0x00, 0x00,
 }
 
+var results_oxid []OXIDResult //存储所有存活主机
+
 // 简化的 RPC 扫描函数
 func Oxid(ipaddres []string, rate int) {
-	var survival = make(map[string]string)
 	fmt.Println("开始 RPC 服务探测...")
-	//fmt.Println("原理: 通过多种方法验证 Windows RPC 服务")
-	//fmt.Println("==============================================")
 
 	start := time.Now()
+
+	//如果rate是默认值，则设置为并发50（并发50的结果更准确）
+	if rate == 300 {
+		rate = 50
+	}
 	sem := make(chan struct{}, rate)
 
 	for _, ipaddr := range ipaddres {
@@ -94,29 +105,60 @@ func Oxid(ipaddres []string, rate int) {
 
 			success, method := simpleRPCProbe(ip)
 			if success {
+
+				result := OXIDResult{
+					IP:       ip,
+					HostInfo: "",
+					State:    "up",
+					Reason:   method,
+				}
 				scanner.Mu.Lock()
-				survival[ip] = method
+				results_oxid = append(results_oxid, result)
 				scanner.Mu.Unlock()
 			}
 		}(ipaddr)
 	}
 	scanner.Wg.Wait()
 
-	// 输出结果
-	//fmt.Println("\n================ 探测结果 ================")
-	fmt.Println("存活主机列表：")
-	if len(survival) > 0 {
-		//fmt.Println("发现Windows RPC主机：")
-		fmt.Println("IP地址\t\t探测方法")
-		for k, v := range survival {
-			fmt.Printf("%s\t%s\n", k, v)
+	//获取MAC地址
+	var targetIps []string
+	for _, result := range results_oxid {
+		targetIps = append(targetIps, result.IP)
+	}
+	MacResult := scanner.GetMac(targetIps)
+
+	//获取主机信息
+	var datas []scanner.HostInfoResult //HostInfoResult在hostinfo代码里已经定义成全局变量
+	for _, result := range results_oxid {
+		data := scanner.HostInfoResult{
+			IP:  result.IP,
+			MAC: MacResult[result.IP],
+		}
+		datas = append(datas, data)
+	}
+	collector := scanner.NewHostInfo() //这一行确实已经调用了函数
+	InfoResult := collector.GetHostInfoBatch(datas)
+
+	fmt.Println("OXID服务发现:")
+	fmt.Println("探测标准: OXID 135端口开放且RPC服务开放")
+	if len(results_oxid) > 0 {
+		//fmt.Println("IP地址\t\tMAC地址\t\t\t主机信息\t\t状态\t\t原因")
+		for _, v := range results_oxid {
+			//fmt.Printf("%s\t%s\t%s\t%s\t%s\n", v.IP, MacResult[v.IP], v.HostInfo, v.State, v.Reason)
+
+			fmt.Printf("IP地址:%s\n", v.IP)
+			fmt.Printf("MAC地址:%s\n", MacResult[v.IP])
+			fmt.Printf("主机信息:%s\n", InfoResult[v.IP])
+			fmt.Printf("主机状态:%s\n", v.State)
+			fmt.Printf("存活原因:%s\n", v.Reason)
+			fmt.Println()
 		}
 	} else {
 		fmt.Println("未发现Windows RPC服务")
 	}
 
 	usetime := time.Since(start)
-	fmt.Printf("\nRPC主机数量：%d\n", len(survival))
+	fmt.Printf("RPC主机数量：%d\n", len(results_oxid))
 	fmt.Printf("运行时间: %v\n", usetime)
 }
 
@@ -142,12 +184,12 @@ func simpleRPCProbe(ip string) (bool, string) {
 
 // 发包进行探测
 func probe(ip string, checkRequest []byte) bool {
-	conn, err := net.DialTimeout("tcp", ip+":135", 3*time.Second)
+	conn, err := net.DialTimeout("tcp", ip+":135", 2*time.Second)
 	if err != nil {
 		return false
 	}
 	defer conn.Close()
-	conn.SetDeadline(time.Now().Add(5 * time.Second))
+	conn.SetDeadline(time.Now().Add(4 * time.Second))
 
 	_, err = conn.Write(checkRequest)
 	if err != nil {

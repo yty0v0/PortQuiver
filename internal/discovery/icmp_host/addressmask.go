@@ -12,6 +12,15 @@ import (
 	"golang.org/x/net/ipv4"
 )
 
+type ADDRESSMASKResult struct {
+	IP       string
+	HostInfo string
+	State    string
+	Reason   string
+}
+
+var results_addressmask []ADDRESSMASKResult
+
 // ICMP 地址掩码探测存活主机
 func Addressmask(ipaddres []string, rate int) {
 	// 定义ICMP地址掩码相关常量
@@ -20,10 +29,14 @@ func Addressmask(ipaddres []string, rate int) {
 		ICMPTypeAddressMaskReply   = 18 // 地址掩码回复
 	)
 
-	var survival = make(map[string]string) // 存储存活主机地址
 	fmt.Println("开始ICMP地址掩码探测...")
 	start := time.Now()
-	sem := make(chan struct{}, rate) // 并发控制，最多20个goroutine
+
+	//如果rate是默认值，则设置为并发20（并发20的结果更准确）
+	if rate == 300 {
+		rate = 20
+	}
+	sem := make(chan struct{}, rate) // 并发控制
 
 	for i, ipaddr := range ipaddres {
 		scanner.Wg.Add(1)
@@ -118,7 +131,7 @@ func Addressmask(ipaddres []string, rate int) {
 
 				// 检查是否为地址掩码回复
 				if rm.Type != ipv4.ICMPType(ICMPTypeAddressMaskReply) {
-					fmt.Printf("非地址掩码回复 %s: Type=%d\n", Ip, rm.Type)
+					//fmt.Printf("非地址掩码回复 %s: Type=%d\n", Ip, rm.Type)
 					continue
 				}
 
@@ -142,8 +155,16 @@ func Addressmask(ipaddres []string, rate int) {
 
 				// 检查ID和序列号是否匹配
 				if responseID == pid && responseSeq == uint16(seq) {
+
+					result := ADDRESSMASKResult{
+						IP:       Ip,
+						HostInfo: "",
+						State:    "up",
+						Reason:   "收到响应",
+					}
+
 					scanner.Mu.Lock()
-					survival[Ip] = "up"
+					results_addressmask = append(results_addressmask, result)
 					scanner.Mu.Unlock()
 					return // 收到响应，退出循环
 				}
@@ -153,16 +174,43 @@ func Addressmask(ipaddres []string, rate int) {
 
 	scanner.Wg.Wait()
 
+	//获取MAC地址
+	var targetIps []string
+	for _, result := range results_addressmask {
+		targetIps = append(targetIps, result.IP)
+	}
+	MacResult := scanner.GetMac(targetIps)
+
+	//获取主机信息
+	var datas []scanner.HostInfoResult //HostInfoResult在hostinfo代码里已经定义成全局变量
+	for _, result := range results_addressmask {
+		data := scanner.HostInfoResult{
+			IP:  result.IP,
+			MAC: MacResult[result.IP],
+		}
+		datas = append(datas, data)
+	}
+	collector := scanner.NewHostInfo() //这一行确实已经调用了函数
+	InfoResult := collector.GetHostInfoBatch(datas)
+
 	// 输出结果
 	fmt.Println("存活主机列表：")
-	fmt.Println("IP地址\t\t状态")
+	//fmt.Println("IP地址\t\tMAC地址\t\t\t主机信息\t\t状态\t\t原因")
 	j := 0
-	for k, v := range survival {
-		fmt.Printf("%s %s\n", k, v)
+	for _, v := range results_addressmask {
+		//fmt.Printf("%s\t%s\t%s\t%s\t%s\n", v.IP, MacResult[v.IP], v.HostInfo, v.State, v.Reason)
+
+		fmt.Printf("IP地址:%s\n", v.IP)
+		fmt.Printf("MAC地址:%s\n", MacResult[v.IP])
+		fmt.Printf("主机信息:%s\n", InfoResult[v.IP])
+		fmt.Printf("主机状态:%s\n", v.State)
+		fmt.Printf("存活原因:%s\n", v.Reason)
+		fmt.Println()
+
 		j++
 	}
 
 	usetime := time.Since(start)
-	fmt.Printf("\n存活主机数量：%d\n", j)
+	fmt.Printf("存活主机数量：%d\n", j)
 	fmt.Printf("运行时间: %v\n", usetime)
 }

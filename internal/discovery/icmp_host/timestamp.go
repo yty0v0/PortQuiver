@@ -12,11 +12,24 @@ import (
 	"golang.org/x/net/ipv4"
 )
 
+type TIMESTAMPResult struct {
+	IP       string
+	HostInfo string
+	State    string
+	Reason   string
+}
+
+var results_timestamp []TIMESTAMPResult //存储所有存活主机
+
 // ICMP时间戳探测存活主机
 func Timestamp(ipaddres []string, rate int) {
-	var survival = make(map[string]string) //存储存活的主机
 	fmt.Println("开始ICMP时间戳探测...")
 	start := time.Now()
+
+	//如果rate是默认值，则设置为并发50（并发50的结果更准确）
+	if rate == 300 {
+		rate = 50
+	}
 	sem := make(chan struct{}, rate)
 
 	for i, ipaddr := range ipaddres {
@@ -132,8 +145,15 @@ func Timestamp(ipaddres []string, rate int) {
 				// 检查ID和序列号是否匹配
 				if responseID == pid && responseSeq == uint16(seq) {
 
+					result := TIMESTAMPResult{
+						IP:       Ip,
+						HostInfo: "",
+						State:    "up",
+						Reason:   "收到响应",
+					}
+
 					scanner.Mu.Lock()
-					survival[Ip] = "up"
+					results_timestamp = append(results_timestamp, result)
 					scanner.Mu.Unlock()
 					return // 收到响应，退出循环
 				}
@@ -143,12 +163,39 @@ func Timestamp(ipaddres []string, rate int) {
 
 	scanner.Wg.Wait()
 
+	//获取MAC地址
+	var targetIps []string
+	for _, result := range results_timestamp {
+		targetIps = append(targetIps, result.IP)
+	}
+	MacResult := scanner.GetMac(targetIps)
+
+	//获取主机信息
+	var datas []scanner.HostInfoResult //HostInfoResult在hostinfo代码里已经定义成全局变量
+	for _, result := range results_timestamp {
+		data := scanner.HostInfoResult{
+			IP:  result.IP,
+			MAC: MacResult[result.IP],
+		}
+		datas = append(datas, data)
+	}
+	collector := scanner.NewHostInfo() //这一行确实已经调用了函数
+	InfoResult := collector.GetHostInfoBatch(datas)
+
 	// 输出结果
 	fmt.Println("存活主机列表：")
-	fmt.Println("IP地址\t\t状态")
+	//fmt.Println("IP地址\t\tMAC地址\t\t\t主机信息\t\t状态\t\t原因")
 	j := 0
-	for k, v := range survival {
-		fmt.Printf("%s\t%s\n", k, v)
+	for _, v := range results_timestamp {
+		//fmt.Printf("%s\t%s\t%s\t%s\t%s\n", v.IP, MacResult[v.IP], v.HostInfo, v.State, v.Reason)
+
+		fmt.Printf("IP地址:%s\n", v.IP)
+		fmt.Printf("MAC地址:%s\n", MacResult[v.IP])
+		fmt.Printf("主机信息:%s\n", InfoResult[v.IP])
+		fmt.Printf("主机状态:%s\n", v.State)
+		fmt.Printf("存活原因:%s\n", v.Reason)
+		fmt.Println()
+
 		j++
 	}
 
