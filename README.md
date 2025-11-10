@@ -15,6 +15,8 @@
 
 包括九种探测模式：ARP，ICMP-PING，ICMP-ADDRESSMASK，ICMP-TIMESTAMP，TCP-CONNECT，TCP-SYN，UDP-CONNECT，OXID，NETBIOS。
 
+包括对主机MAC地址，主机信息(所属厂商，类型，操作系统，主机名)，主机状态，判断主机存活原因的获取
+
 ## 安装
 直接下载zip压缩包，放到Linux上解压
 ```
@@ -51,7 +53,7 @@ go build -o reconquiver cmd/scanner/main.go
 -m string    主机探测模式类型选择: A(ARP),ICP(ICMP-PING),ICA(ICMP-ADDRESSMASK),ICT(ICMP-TIMESTAMP),T(TCP-CONNECT),TS(TCP-SYN),U(UDP-CONNECT),N(NETBIOS),O(OXID) (默认: ICP)
 
 公共选项:
--R int       并发扫描次数 (默认：500)
+-R int       并发扫描次数 (默认：300，一些模式默认选用其它合适的并发数量)
 
 这些模式需要使用管理员权限运行：TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)。
 

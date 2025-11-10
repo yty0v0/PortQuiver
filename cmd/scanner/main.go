@@ -172,7 +172,7 @@ func parseFlags() *Config {
 		fmt.Println("  -m string    主机探测模式类型选择: A(ARP),ICP(ICMP-PING),ICA(ICMP-ADDRESSMASK),ICT(ICMP-TIMESTAMP),T(TCP-CONNECT),TS(TCP-SYN),U(UDP-CONNECT),N(NETBIOS),O(OXID) (默认: ICP)")
 
 		fmt.Println("\n公共选项:")
-		fmt.Println("  -R int       并发扫描次数 (默认：300)")
+		fmt.Println("  -R int       并发扫描次数 (默认：300，一些模式默认选用其它合适的并发数量)")
 
 		fmt.Println("\n这些模式需要使用管理员权限运行：TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)。")
 
