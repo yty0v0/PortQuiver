@@ -153,7 +153,7 @@ func parseFlags() *Config {
 
 	// 自定义帮助信息显示
 	flag.Usage = func() {
-		fmt.Printf("用法：%s [选项]\n", "./reconquiver")
+		fmt.Println("\n用法:\nLinux: ./reconquiver [选项]    Windows: reconquiver.exe [选项]")
 
 		fmt.Println("\n端口扫描模式")
 		fmt.Println("选项:")
