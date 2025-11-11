@@ -12,6 +12,11 @@ import (
 
 // ARP扫描函数
 func GetMac(targetIPs []string) map[string]string {
+	//如果传入的是空的情况
+	if targetIPs == nil || len(targetIPs) == 0 {
+		return nil
+	}
+
 	survival := make(map[string]string)
 
 	// 自动选择接口

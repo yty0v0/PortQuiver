@@ -164,7 +164,7 @@ func Ping(ipaddres []string, rate int) {
 	}
 
 	usetime := time.Now().Sub(start)
-	fmt.Println()
+	//fmt.Println()
 	fmt.Printf("存活主机数量：%d \n", j)
 	fmt.Printf("运行时间:%v seconds\n", usetime)
 }

@@ -3,7 +3,7 @@
 ## 简介
 基于Go编写的轻量化端口扫描和主机探测工具，支持多种扫描/探测技术。
 各种模式和方法可以自由切换，使用简单，代码通俗易懂，并附有详细注释，方便基于该工具进行再次改进和功能添加。
-支持Windows,Linux系统，以下模式需要使用root权限运行：TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)。
+同时支持Windows，Linux系统。
 
 ### 端口扫描
 包括四种扫描方法：全端口扫描，常见端口扫描，自定义端口扫描，自定义端口范围扫描。
@@ -78,7 +78,14 @@ sudo ./reconquiver -t target -C -s TA -R 5        ACK常见端口扫描(推荐�
 
 主机探测常用命令:
 ./reconquiver -d -B traget -m A                   ARP模式进行C段探测
-./reconquiver -d -B traget -m ICP                 ICMP-PING模式进行C段探测
+sudo ./reconquiver -d -B traget -m ICP                 ICMP-PING模式进行C段探测
 ./reconquiver -d -B traget -m T                   TCP模式进行C段探测
 sudo ./reconquiver -d -B traget -m TS             TCP-SYN模式进行C段探测
 sudo ./reconquiver -d -B traget -m U              UDP模式进行C段探测
+```
+
+### 注意事项
+(1)以下模式需要使用root权限运行：
+TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)，ICMP-PING，ICMP-ADDRESSMASK，ICMP-TIMESTAMP。
+
+(2)并发数量设置的大小可能会影响扫描/探测结果
