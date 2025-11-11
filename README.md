@@ -85,7 +85,7 @@ sudo ./reconquiver -d -B traget -m U              UDP模式进行C段探测
 ```
 
 ### 注意事项
-(1)以下模式需要使用root权限运行：
+(1) 以下模式需要使用root权限运行：
 TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)，ICMP-PING，ICMP-ADDRESSMASK，ICMP-TIMESTAMP。
 
-(2)并发数量设置的大小可能会影响扫描/探测结果
+(2) 并发数量设置的大小可能会影响扫描/探测结果
