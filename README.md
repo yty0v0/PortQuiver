@@ -3,7 +3,7 @@
 ## 简介
 基于Go编写的轻量化端口扫描和主机探测工具，支持多种扫描/探测技术。
 各种模式和方法可以自由切换，使用简单，代码通俗易懂，并附有详细注释，方便基于该工具进行再次改进和功能添加。
-目前只支持Linux/系统，以下模式需要使用管理员权限运行：TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)。
+支持Windows,Linux系统，以下模式需要使用root权限运行：TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)。
 
 ### 端口扫描
 包括四种扫描方法：全端口扫描，常见端口扫描，自定义端口扫描，自定义端口范围扫描。
@@ -18,6 +18,7 @@
 包括对主机MAC地址，主机信息(所属厂商，类型，操作系统，主机名)，主机状态，判断主机存活原因的获取
 
 ## 安装
+### Linux安装
 直接下载zip压缩包，放到Linux上解压
 ```
 unzip ReconQuiver-main.zip
@@ -31,10 +32,21 @@ go build -o reconquiver cmd/scanner/main.go
 ```
 ./reconquiver -h
 ```
+### Windows安装
+解压以后找到ReconQuiver-main所在目录，通过cmd打开命令行，进入目录并编译
+```
+cd ReconQuiver-main
+go build -o reconquiver.exe cmd/scanner/main.go
+```
+运行程序查看帮助信息，如果显示帮助信息说明安装成功
+```
+reconquiver.exe -h
+```
 
 ## 使用说明
 ```
-用法：./reconquiver [选项]
+用法： 
+Linux: ./reconquiver [选项]    Windows: reconquiver.exe [选项]
 
 端口扫描模式
 选项:

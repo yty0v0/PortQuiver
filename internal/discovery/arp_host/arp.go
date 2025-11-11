@@ -46,6 +46,7 @@ func Arp(targetIPs []string, rate int) {
 			fmt.Printf("警告: 目标IP %s 不在本地网络 %s 中\n", firstTarget, localNet)
 			fmt.Printf("ARP扫描只能在本地局域网内进行\n")
 			fmt.Printf("建议使用ICMP Echo扫描\n")
+			return
 		}
 	}
 
