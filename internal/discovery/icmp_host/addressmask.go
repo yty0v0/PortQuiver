@@ -32,11 +32,11 @@ func Addressmask(ipaddres []string, rate int) {
 	fmt.Println("开始ICMP地址掩码探测...")
 	start := time.Now()
 
-	//如果rate是默认值，则设置为并发20（并发20的结果更准确）
+	//如果rate是默认值，则设置为并发50（并发50的结果更准确）
 	if rate == 300 {
 		rate = 20
 	}
-	sem := make(chan struct{}, rate) // 并发控制
+	sem := make(chan struct{}, rate) // 并发控制，最多20个goroutine
 
 	for i, ipaddr := range ipaddres {
 		scanner.Wg.Add(1)
@@ -171,19 +171,28 @@ func Addressmask(ipaddres []string, rate int) {
 			}
 		}(ipaddr, i)
 	}
-
 	scanner.Wg.Wait()
+
+	//去重，因为可能收到多个icmp的相同响应
+	var results_addressmask_nosame []ADDRESSMASKResult
+	check := make(map[string]bool)
+	for _, result := range results_addressmask {
+		if !check[result.IP] {
+			check[result.IP] = true
+			results_addressmask_nosame = append(results_addressmask_nosame, result)
+		}
+	}
 
 	//获取MAC地址
 	var targetIps []string
-	for _, result := range results_addressmask {
+	for _, result := range results_addressmask_nosame {
 		targetIps = append(targetIps, result.IP)
 	}
 	MacResult := scanner.GetMac(targetIps)
 
 	//获取主机信息
 	var datas []scanner.HostInfoResult //HostInfoResult在hostinfo代码里已经定义成全局变量
-	for _, result := range results_addressmask {
+	for _, result := range results_addressmask_nosame {
 		data := scanner.HostInfoResult{
 			IP:  result.IP,
 			MAC: MacResult[result.IP],
@@ -197,7 +206,7 @@ func Addressmask(ipaddres []string, rate int) {
 	fmt.Println("存活主机列表：")
 	//fmt.Println("IP地址\t\tMAC地址\t\t\t主机信息\t\t状态\t\t原因")
 	j := 0
-	for _, v := range results_addressmask {
+	for _, v := range results_addressmask_nosame {
 		//fmt.Printf("%s\t%s\t%s\t%s\t%s\n", v.IP, MacResult[v.IP], v.HostInfo, v.State, v.Reason)
 
 		fmt.Printf("IP地址:%s\n", v.IP)
