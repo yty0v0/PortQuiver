@@ -9,6 +9,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"github.com/yty0v0/ReconQuiver/internal/discovery/utils"
 	"github.com/yty0v0/ReconQuiver/internal/scanner"
 )
 
@@ -223,15 +224,15 @@ func Arp(targetIPs []string, rate int) {
 	time.Sleep(500 * time.Millisecond) // 等待goroutine安全退出
 
 	//获取主机信息
-	var datas []scanner.HostInfoResult //HostInfoResult在hostinfo代码里已经定义成全局变量
+	var datas []utils.HostInfoResult //HostInfoResult在hostinfo代码里已经定义成全局变量
 	for ip, mac := range arp_survival {
-		data := scanner.HostInfoResult{
+		data := utils.HostInfoResult{
 			IP:  ip,
 			MAC: mac,
 		}
 		datas = append(datas, data)
 	}
-	collector := scanner.NewHostInfo() //这一行确实已经调用了函数
+	collector := utils.NewHostInfo() //这一行确实已经调用了函数
 	InfoResult := collector.GetHostInfoBatch(datas)
 
 	// 输出最终结果

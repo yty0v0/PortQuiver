@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
+	"github.com/yty0v0/ReconQuiver/internal/scan/utils"
 	"github.com/yty0v0/ReconQuiver/internal/scanner"
 
 	"net"
@@ -36,7 +37,7 @@ func Tcp_syn(ip string, port []int, rate int) {
 				result := TCPSYNResult{
 					Port:    j,
 					State:   "open",
-					Service: scanner.GetService(j),
+					Service: "",
 				}
 
 				scanner.Mu.Lock()
@@ -47,15 +48,22 @@ func Tcp_syn(ip string, port []int, rate int) {
 	}
 	scanner.Wg.Wait()
 
+	//获取端口服务
+	var data_port []int
+	for _, result := range results_tcpsyn {
+		data_port = append(data_port, result.Port)
+	}
+	detector := utils.NewProtocolDetector(3 * time.Second)
+	results := detector.BatchDetect(ip, data_port)
+
 	fmt.Println("\n扫描结果:")
 	fmt.Println("端口\t状态\t服务")
-	openPort := 0
-	for _, v := range results_tcpsyn {
-		fmt.Printf("%d\t%s\t%s\n", v.Port, v.State, v.Service)
-		openPort++
+	for _, v := range results {
+		fmt.Printf("%d\topen\t%s", v.Port, v.Service)
+		fmt.Println()
 	}
-	fmt.Println()
-	fmt.Printf("共发现 %d 个端口开放\n", openPort)
+
+	fmt.Printf("共发现 %d 个端口开放\n", len(results))
 	usetime := time.Now().Sub(start)
 	fmt.Printf("运行时间：%v 秒 \n", usetime)
 }

@@ -1,4 +1,4 @@
-package scanner
+package utils
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"github.com/yty0v0/ReconQuiver/internal/scanner"
 )
 
 // ARP扫描函数
@@ -42,9 +43,9 @@ func GetMac(targetIPs []string) map[string]string {
 	localIPStr := localIP.String()
 	for _, targetIP := range targetIPs {
 		if targetIP == localIPStr {
-			Mu.Lock()
+			scanner.Mu.Lock()
 			survival[localIPStr] = localMAC.String()
-			Mu.Unlock()
+			scanner.Mu.Unlock()
 			break
 		}
 	}
@@ -130,12 +131,12 @@ func GetMac(targetIPs []string) map[string]string {
 					//targetIP := net.IP(arp.DstProtAddress).String()             // 目标IP
 
 					// 记录所有ARP回复
-					Mu.Lock()
+					scanner.Mu.Lock()
 					if _, exists := survival[senderIP]; !exists {
 						survival[senderIP] = senderMAC
 						//fmt.Printf(">>> 发现存活主机: %s -> %s (回复目标IP: %s)\n", senderIP, senderMAC, targetIP)
 					}
-					Mu.Unlock()
+					scanner.Mu.Unlock()
 				}
 			}
 		}
@@ -150,19 +151,19 @@ func GetMac(targetIPs []string) map[string]string {
 			continue //跳过本机ip，避免扫描自己
 		}
 
-		Wg.Add(1)
+		scanner.Wg.Add(1)
 		sentCount++
 
 		go func(ip string, seq int) {
 			sem <- struct{}{}
-			defer Wg.Done()
+			defer scanner.Wg.Done()
 			defer func() { <-sem }()
 
 			time.Sleep(time.Duration(seq*50) * time.Millisecond) // 增加间隔
 			sendARPRequest1(handle, localMAC, localIP, ip)       //发送APR数据包
 		}(targetIP, i)
 	}
-	Wg.Wait()
+	scanner.Wg.Wait()
 
 	//fmt.Printf("总共发送了 %d 个ARP请求\n", sentCount)
 	//fmt.Println("所有ARP请求发送完成")
@@ -172,9 +173,9 @@ func GetMac(targetIPs []string) map[string]string {
 
 	for {
 		time.Sleep(1 * time.Second)
-		Mu.Lock()
+		scanner.Mu.Lock()
 		currentCount := len(survival)
-		Mu.Unlock()
+		scanner.Mu.Unlock()
 
 		// 如果有新发现，更新最后发现时间
 		if currentCount > 0 {

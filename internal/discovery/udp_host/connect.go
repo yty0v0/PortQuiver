@@ -5,6 +5,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/yty0v0/ReconQuiver/internal/discovery/utils"
 	"github.com/yty0v0/ReconQuiver/internal/scanner"
 )
 
@@ -72,18 +73,18 @@ func Udp_connect(ipaddres []string, rate int) {
 	for _, result := range results_udp_survival {
 		targetIps = append(targetIps, result.IP)
 	}
-	MacResult := scanner.GetMac(targetIps)
+	MacResult := utils.GetMac(targetIps)
 
 	//获取主机信息
-	var datas []scanner.HostInfoResult //HostInfoResult在hostinfo代码里已经定义成全局变量
+	var datas []utils.HostInfoResult //HostInfoResult在hostinfo代码里已经定义成全局变量
 	for _, result := range results_udp_survival {
-		data := scanner.HostInfoResult{
+		data := utils.HostInfoResult{
 			IP:  result.IP,
 			MAC: MacResult[result.IP],
 		}
 		datas = append(datas, data)
 	}
-	collector := scanner.NewHostInfo() //这一行确实已经调用了函数
+	collector := utils.NewHostInfo() //这一行确实已经调用了函数
 	InfoResult := collector.GetHostInfoBatch(datas)
 
 	// 输出结果

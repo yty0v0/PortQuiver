@@ -5,6 +5,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/yty0v0/ReconQuiver/internal/scan/utils"
 	"github.com/yty0v0/ReconQuiver/internal/scanner"
 )
 
@@ -40,16 +41,15 @@ func Udp_connect(ipaddress string, ports []int, rate int) {
 	}
 	scanner.Wg.Wait()
 
-	// 输出扫描结果
-	fmt.Println("\n扫描结果:")
-	fmt.Println("端口\t状态\t服务")
-	//fmt.Println("----\t----\t\t----")
 	openPorts := 0
 	openfilteredPorts := 0
 	errorPorts := 0
-	for port, result := range results {
+
+	//获取端口服务
+	var data_port []int
+	for _, result := range results {
 		if result.State == "open" {
-			fmt.Printf("%d\t%s\t%s\n", port, result.State, result.Service)
+			data_port = append(data_port, result.Port)
 			openPorts++
 		}
 		if result.State == "open|filtered" {
@@ -58,6 +58,18 @@ func Udp_connect(ipaddress string, ports []int, rate int) {
 		if result.State == "error" {
 			errorPorts++
 		}
+	}
+	detector := utils.NewProtocolDetector(3 * time.Second)
+	results_server := detector.BatchDetect(ipaddress, data_port)
+
+	fmt.Println("\n扫描结果:")
+	fmt.Println("端口\t状态\t服务")
+
+	for _, v := range results_server {
+		if results[v.Port].State == "open" {
+			fmt.Printf("%d\topen\t%s", v.Port, v.Service)
+		}
+		fmt.Println()
 	}
 
 	fmt.Println()
@@ -79,7 +91,7 @@ func scanUDPPort(ip string, port int, timeout time.Duration) UDPResult {
 	//创建一个结构体实例
 	result := UDPResult{
 		Port:    port,
-		Service: scanner.GetService(port),
+		Service: "",
 		State:   "open|filtered", // 默认状态
 	}
 
@@ -133,7 +145,7 @@ func scanUDPPort(ip string, port int, timeout time.Duration) UDPResult {
 			// 收到响应，端口开放
 			if n > 0 {
 				result.State = "open"
-				fmt.Printf("端口 %d 收到响应，长度: %d 字节\n", port, n)
+				//fmt.Printf("端口 %d 收到响应，长度: %d 字节\n", port, n)
 				return result
 			}
 		}

@@ -174,7 +174,7 @@ func parseFlags() *Config {
 		fmt.Println("\n公共选项:")
 		fmt.Println("  -R int       并发扫描次数 (默认：300，一些模式默认选用其它合适的并发数量)")
 
-		fmt.Println("\n这些模式需要使用管理员权限运行：TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)。")
+		fmt.Println("\n这些模式需要使用root权限运行：TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)。")
 
 		fmt.Println("\n端口扫描常用命令:")
 		fmt.Println("  ./reconquiver -t target -A -R 5000              TCP全端口扫描(推荐并发5000)")
@@ -231,7 +231,7 @@ func validateConfig(config *Config) error {
 	} else {
 		// 端口扫描模式验证
 		if config.Target == "" {
-			return fmt.Errorf("必须指定目标地址 (-t)")
+			return fmt.Errorf("必须指定目标地址 (-t) 或 启用主机探测（-d）")
 		}
 
 		scanTypes := []string{"T", "TS", "TA", "TF", "TN", "U"}

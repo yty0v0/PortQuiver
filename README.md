@@ -10,12 +10,14 @@
 
 包括六种扫描模式：TCP-CONNECT，TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP-CONNECT。
 
+包括对端口所开放服务的智能指纹识别
+
 ### 存活主机探测
 包括三种探测方法：C段探测，自定义主机范围探测，自定义主机列表探测。
 
 包括九种探测模式：ARP，ICMP-PING，ICMP-ADDRESSMASK，ICMP-TIMESTAMP，TCP-CONNECT，TCP-SYN，UDP-CONNECT，OXID，NETBIOS。
 
-包括对主机MAC地址，主机信息(所属厂商，类型，操作系统，主机名)，主机状态，判断主机存活原因的获取
+包括对主机MAC地址，主机信息(所属厂商，类型，操作系统，主机名)，主机状态，主机存活原因的获取
 
 ## 安装
 ### Linux安装
@@ -67,7 +69,7 @@ Linux: ./reconquiver [选项]    Windows: reconquiver.exe [选项]
 公共选项:
 -R int       并发扫描次数 (默认：300，一些模式默认选用其它合适的并发数量)
 
-以下模式需要使用管理员权限运行：
+以下模式需要使用root权限运行：
 TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)
 
 端口扫描常用命令:
