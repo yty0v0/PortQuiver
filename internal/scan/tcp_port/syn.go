@@ -22,6 +22,12 @@ type TCPSYNResult struct {
 var results_tcpsyn []TCPSYNResult
 
 func Tcp_syn(ip string, port []int, rate int) {
+
+	//如果rate是默认值，则设置为并发200（并发200的结果更准确）
+	if rate == 300 {
+		rate = 200
+	}
+
 	sem := make(chan struct{}, rate) //设置并发控制
 	start := time.Now()
 	fmt.Printf("开始TCP SYN扫描 %s...\n", ip)

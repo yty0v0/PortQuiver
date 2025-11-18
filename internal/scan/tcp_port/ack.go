@@ -24,6 +24,11 @@ func Tcp_ack(target string, ports []int, rate int) {
 	start := time.Now()
 	fmt.Printf("开始TCP ACK扫描 %s...\n", target)
 
+	//如果rate是默认值，则设置为并发5（并发5的结果更准确）
+	if rate == 300 {
+		rate = 5
+	}
+
 	ACKScan(target, ports, rate, timeout)
 
 	fmt.Println("\n扫描结果:")

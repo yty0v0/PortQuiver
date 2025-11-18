@@ -19,6 +19,12 @@ type UDPResult struct {
 // UDP端口扫描操作
 func Udp_connect(ipaddress string, ports []int, rate int) {
 	results := make(map[int]UDPResult)
+
+	//如果rate是默认值，则设置为并发500（并发500的结果更准确）
+	if rate == 300 {
+		rate = 500
+	}
+
 	sem := make(chan struct{}, rate) // 并发控制
 
 	fmt.Printf("开始UDP扫描 %s...\n", ipaddress)

@@ -67,16 +67,16 @@ Linux: ./reconquiver [选项]    Windows: reconquiver.exe [选项]
 -m string    主机探测模式类型选择: A(ARP),ICP(ICMP-PING),ICA(ICMP-ADDRESSMASK),ICT(ICMP-TIMESTAMP),T(TCP-CONNECT),TS(TCP-SYN),U(UDP-CONNECT),N(NETBIOS),O(OXID) (默认: ICP)
 
 公共选项:
--R int       并发扫描次数 (默认：300，一些模式默认选用其它合适的并发数量)
+-R int       并发扫描次数 (默认选用合适的并发数量，可自行调整)
 
 以下模式需要使用root权限运行：
 TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)
 
 端口扫描常用命令:
-./reconquiver -t traget -A  -R 5000               TCP全端口扫描(推荐并发5000)
-sudo ./reconquiver -t target -A -s TS -R 200      SYN全端口扫描(推荐并发200)
-./reconquiver -t target -C -s U                   UDP常见端口扫描(使用默认并发500) 
-sudo ./reconquiver -t target -C -s TA -R 5        ACK常见端口扫描(推荐并发5)
+./reconquiver -t traget -A                        TCP全端口扫描
+sudo ./reconquiver -t target -A -s TS             SYN全端口扫描
+./reconquiver -t target -C -s U                   UDP常见端口扫描
+sudo ./reconquiver -t target -C -s TA             ACK常见端口扫描
 
 主机探测常用命令:
 ./reconquiver -d -B traget -m A                   ARP模式进行C段探测

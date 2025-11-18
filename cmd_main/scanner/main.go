@@ -172,15 +172,15 @@ func parseFlags() *Config {
 		fmt.Println("  -m string    主机探测模式类型选择: A(ARP),ICP(ICMP-PING),ICA(ICMP-ADDRESSMASK),ICT(ICMP-TIMESTAMP),T(TCP-CONNECT),TS(TCP-SYN),U(UDP-CONNECT),N(NETBIOS),O(OXID) (默认: ICP)")
 
 		fmt.Println("\n公共选项:")
-		fmt.Println("  -R int       并发扫描次数 (默认：300，一些模式默认选用其它合适的并发数量)")
+		fmt.Println("  -R int       并发扫描次数 (默认选用合适的并发数量，可自行调整)")
 
 		fmt.Println("\n这些模式需要使用root权限运行：TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)。")
 
 		fmt.Println("\n端口扫描常用命令:")
-		fmt.Println("  ./reconquiver -t target -A -R 5000              TCP全端口扫描(推荐并发5000)")
-		fmt.Println("  sudo ./reconquiver -t target -A -s TS -R 200    SYN全端口扫描(推荐并发200)")
-		fmt.Println("  ./reconquiver -t target -C -s U                 UDP常见端口扫描(使用默认并发500)")
-		fmt.Println("  sudo ./reconquiver -t target -C -s TA -R 5      ACK常见端口扫描(推荐并发5)")
+		fmt.Println("  ./reconquiver -t target -A               	   TCP全端口扫描")
+		fmt.Println("  sudo ./reconquiver -t target -A -s TS    	   SYN全端口扫描")
+		fmt.Println("  ./reconquiver -t target -C -s U                 UDP常见端口扫描")
+		fmt.Println("  sudo ./reconquiver -t target -C -s TA      	   ACK常见端口扫描")
 
 		fmt.Println("\n主机探测常用命令:")
 		fmt.Println("  ./reconquiver -d -B target -m A                 ARP模式进行C段探测")
