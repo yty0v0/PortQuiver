@@ -1,0 +1,36 @@
+{
+  "rules": [
+    {
+      "name": "MySQLAuth",
+      "ports": [3306],
+      "protocol": "tcp",
+      "data": "85a6ff0100000001210000000000000000000000000000000000000000000000726f6f740000",
+      "send_first": true,
+      "match": [
+        "\\\\x00\\\\x00\\\\x01\\\\xff",
+        "Host '.*' is not allowed",
+        "Access denied for user"
+      ],
+      "is_binary": [
+        true,
+        false,
+        false
+      ],
+      "service": "mysql"
+    },
+    {
+      "name": "CustomHTTP",
+      "ports": [8080, 8081],
+      "protocol": "tcp",
+      "data": "GET / HTTP/1.1\\r\\nHost: localhost\\r\\nUser-Agent: CustomScanner\\r\\n\\r\\n",
+      "send_first": true,
+      "match": [
+        "HTTP/[0-9.]+ ([0-9]+).*Server: ([^\\r\\n]+)"
+      ],
+      "is_binary": [
+        false
+      ],
+      "service": "http"
+    }
+  ]
+}

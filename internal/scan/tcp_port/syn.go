@@ -23,9 +23,9 @@ var results_tcpsyn []TCPSYNResult
 
 func Tcp_syn(ip string, port []int, rate int) {
 
-	//如果rate是默认值，则设置为并发200（并发200的结果更准确）
+	//如果rate是默认值，则设置为并发5000（并发5000的结果更准确）
 	if rate == 300 {
-		rate = 200
+		rate = 5000
 	}
 
 	sem := make(chan struct{}, rate) //设置并发控制

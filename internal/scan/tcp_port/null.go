@@ -20,7 +20,7 @@ type NULLScanResult struct {
 var nullResults []NULLScanResult
 
 func Tcp_null(ip string, port []int, rate int) {
-	timeout := 4 * time.Second
+	timeout := 3 * time.Second
 	start := time.Now()
 	fmt.Printf("开始TCP NULL扫描 %s...\n", ip)
 

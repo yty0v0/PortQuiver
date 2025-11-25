@@ -17,9 +17,8 @@ type ServiceInfo struct {
 	Host     string // 目标主机
 	Port     int    // 端口号
 	Protocol string // 传输层协议类型
-	Service  string // 服务类型
+	Service  string // 服务
 	Banner   string // 服务Banner
-	Version  string // 版本信息
 }
 
 // ServiceProbe 服务探测包
@@ -28,6 +27,7 @@ type ServiceProbe struct {
 	Data      []byte
 	SendFirst bool
 	Match     []MatchRule
+	Ports     []int
 }
 
 // MatchRule 匹配规则
@@ -35,7 +35,6 @@ type MatchRule struct {
 	Pattern    []byte // 二进制模式匹配数据（用于二进制协议）
 	PatternStr string // 字符串模式匹配规则（正则表达式，用于文本协议）
 	Service    string // 匹配成功时标识的服务类型
-	Version    string // 匹配成功时提取的版本信息
 	Proto      string // 传输层协议类型（tcp、udp）
 	IsBinary   bool   // 标识是否使用二进制模式匹配
 }
@@ -508,8 +507,8 @@ func (pd *ProtocolDetector) initProbes() {
 			Data:      []byte("SSH-2.0-Client\r\n"),
 			SendFirst: true,
 			Match: []MatchRule{
-				{PatternStr: `^SSH-([0-9.]+)-`, Service: "ssh", Version: "$1", Proto: "tcp"},
-				{PatternStr: `OpenSSH[_-]([0-9.]+)`, Service: "ssh", Version: "OpenSSH/$1", Proto: "tcp"},
+				{PatternStr: `^SSH-([0-9.]+)-`, Service: "ssh", Proto: "tcp"},
+				{PatternStr: `OpenSSH[_-]([0-9.]+)`, Service: "ssh", Proto: "tcp"},
 			},
 		},
 
@@ -521,7 +520,7 @@ func (pd *ProtocolDetector) initProbes() {
 			Match: []MatchRule{
 				{PatternStr: `^220\s`, Service: "smtp", Proto: "tcp"},
 				{PatternStr: `^220-`, Service: "smtp", Proto: "tcp"},
-				{PatternStr: `ESMTP (Postfix|Sendmail|Exim)`, Service: "smtp", Version: "$1", Proto: "tcp"},
+				{PatternStr: `ESMTP (Postfix|Sendmail|Exim)`, Service: "smtp", Proto: "tcp"},
 			},
 		},
 		{
@@ -587,13 +586,13 @@ func (pd *ProtocolDetector) initProbes() {
 				0x00, 0x00, 0x00, 0x18, 0x53, 0xC8, 0x00, 0x00, 0x00, 0x00,
 				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 				0xFF, 0xFE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x62, 0x00, 0x02,
-				0x50, 0x43, 0x20, 0x4E, 0x45, 0x54, 0x57, 0x4F, 0x52, 0x4B,
+				0x50, 0x43, 0x20, 0x4E, 0x45, 0x54, 0x57, 0x4E, 0x52, 0x4B,
 				0x20, 0x50, 0x52, 0x4F, 0x47, 0x52, 0x41, 0x4D, 0x20, 0x31,
 				0x2E, 0x30, 0x00, 0x02, 0x4C, 0x41, 0x4E, 0x4D, 0x41, 0x4E,
 				0x31, 0x2E, 0x30, 0x00, 0x02, 0x57, 0x69, 0x6E, 0x64, 0x6F,
 				0x77, 0x73, 0x20, 0x66, 0x6F, 0x72, 0x20, 0x57, 0x6F, 0x72,
 				0x6B, 0x67, 0x72, 0x6F, 0x75, 0x70, 0x73, 0x20, 0x33, 0x2E,
-				0x31, 0x61, 0x00, 0x02, 0x4C, 0x4D, 0x31, 0x2E, 0x32, 0x58,
+				0x31, 0x61, 0x00, 0x02, 0x4C, 0x4C, 0x31, 0x2E, 0x32, 0x58,
 				0x30, 0x30, 0x32, 0x00, 0x02, 0x4C, 0x41, 0x4E, 0x4D, 0x41,
 				0x4E, 0x32, 0x2E, 0x31, 0x00, 0x02, 0x4E, 0x54, 0x20, 0x4C,
 				0x4D, 0x20, 0x30, 0x2E, 0x31, 0x32, 0x00,
@@ -604,15 +603,50 @@ func (pd *ProtocolDetector) initProbes() {
 			},
 		},
 
-		// MySQL探测
+		// 增强的 MySQL 探测
 		{
-			Name:      "MySQLAuthError",
+			Name:      "MySQLBanner",
 			Data:      []byte(""),
 			SendFirst: false,
 			Match: []MatchRule{
-				{PatternStr: `Host '.*' is not allowed to connect to this MySQL server`, Service: "mysql", Version: "Access Denied", Proto: "tcp"},
-				{PatternStr: `Access denied for user.*to database.*`, Service: "mysql", Version: "Auth Failed", Proto: "tcp"},
-				{PatternStr: `Too many connections`, Service: "mysql", Version: "Max Connections", Proto: "tcp"},
+				{PatternStr: `\x00\x00\x00\x0a([0-9.]+)-MariaDB`, Service: "mysql", Proto: "tcp"},
+				{PatternStr: `\x00\x00\x00\x0a([0-9.]+)`, Service: "mysql", Proto: "tcp"},
+				{PatternStr: `mysql_native_password`, Service: "mysql", Proto: "tcp"},
+			},
+		},
+		{
+			Name:      "MySQLHandshake",
+			Data:      []byte{}, // 不发送数据，直接读取握手包
+			SendFirst: false,
+			Match: []MatchRule{
+				{PatternStr: `^.\x00\x00\x00\x0a([0-9.]+)`, Service: "mysql", Proto: "tcp", IsBinary: false},
+				{Pattern: []byte{0x00, 0x00, 0x00, 0x0a}, Service: "mysql", Proto: "tcp", IsBinary: true},
+			},
+		},
+		{
+			Name: "MySQLAuth",
+			Data: []byte{
+				0x85, 0xa6, 0xff, 0x01, 0x00, 0x00, 0x00, 0x01,
+				0x21, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				0x72, 0x6f, 0x6f, 0x74, 0x00, 0x00,
+			},
+			SendFirst: true,
+			Match: []MatchRule{
+				{PatternStr: `\x00\x00\x01\xff`, Service: "mysql", Proto: "tcp"},
+				{PatternStr: `Host '.*' is not allowed`, Service: "mysql", Proto: "tcp"},
+				{PatternStr: `Access denied for user`, Service: "mysql", Proto: "tcp"},
+			},
+		},
+
+		{
+			Name:      "MySQLVersion",
+			Data:      []byte{0x0a, 0x00, 0x00, 0x00, 0x0a, 0x53, 0x45, 0x4c, 0x45, 0x43, 0x54, 0x20, 0x40, 0x40, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x5f, 0x63, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x4c, 0x49, 0x4d, 0x49, 0x54, 0x20, 0x31},
+			SendFirst: true,
+			Match: []MatchRule{
+				{PatternStr: `mysql`, Service: "mysql", Proto: "tcp", IsBinary: false},
+				{PatternStr: `MariaDB`, Service: "mysql", Proto: "tcp", IsBinary: false},
 			},
 		},
 
@@ -635,7 +669,7 @@ func (pd *ProtocolDetector) initProbes() {
 			Match: []MatchRule{
 				{PatternStr: `^-ERR`, Service: "redis", Proto: "tcp"},
 				{PatternStr: `^\+PONG`, Service: "redis", Proto: "tcp"},
-				{PatternStr: `^-NOAUTH`, Service: "redis", Version: "Authentication Required", Proto: "tcp"},
+				{PatternStr: `^-NOAUTH`, Service: "redis", Proto: "tcp"},
 			},
 		},
 
@@ -705,15 +739,33 @@ func (pd *ProtocolDetector) initProbes() {
 			Data:      []byte(""),
 			SendFirst: false,
 			Match: []MatchRule{
-				{PatternStr: `^SSH-([0-9.]+)-`, Service: "ssh", Version: "$1", Proto: "tcp"},
+				{PatternStr: `^SSH-([0-9.]+)-`, Service: "ssh", Proto: "tcp"},
 				{PatternStr: `^220\s`, Service: "smtp", Proto: "tcp"},
 				{PatternStr: `^\+\s?OK`, Service: "pop3", Proto: "tcp"},
 				{PatternStr: `^HTTP/1\.[01]\s`, Service: "http", Proto: "tcp"},
 				{PatternStr: `\bMicrosoft\b`, Service: "netbios-ssn", Proto: "tcp"},
 				{PatternStr: `\bSamba\b`, Service: "microsoft-ds", Proto: "tcp"},
-				{PatternStr: `nginx/([0-9.]+)`, Service: "http", Version: "nginx/$1", Proto: "tcp"},
-				{PatternStr: `Apache/([0-9.]+)`, Service: "http", Version: "Apache/$1", Proto: "tcp"},
-				{PatternStr: `IIS/([0-9.]+)`, Service: "http", Version: "IIS/$1", Proto: "tcp"},
+				// Web 服务器识别
+				{PatternStr: `nginx/([0-9.]+)`, Service: "nginx", Proto: "tcp"},
+				{PatternStr: `Apache/([0-9.]+)`, Service: "apache", Proto: "tcp"},
+				{PatternStr: `Microsoft-IIS/([0-9.]+)`, Service: "microsoft-iis", Proto: "tcp"},
+				{PatternStr: `IIS/([0-9.]+)`, Service: "microsoft-iis", Proto: "tcp"},
+				{PatternStr: `Tomcat/([0-9.]+)`, Service: "tomcat", Proto: "tcp"},
+				// 数据库识别
+				{PatternStr: `MySQL`, Service: "mysql", Proto: "tcp"},
+				{PatternStr: `PostgreSQL`, Service: "postgresql", Proto: "tcp"},
+				{PatternStr: `Redis`, Service: "redis", Proto: "tcp"},
+				{PatternStr: `MongoDB`, Service: "mongodb", Proto: "tcp"},
+				// 其他常见服务
+				{PatternStr: `FTP server`, Service: "ftp", Proto: "tcp"},
+				{PatternStr: `IMAP`, Service: "imap", Proto: "tcp"},
+				{PatternStr: `POP3`, Service: "pop3", Proto: "tcp"},
+				{PatternStr: `Telnet`, Service: "telnet", Proto: "tcp"},
+				{PatternStr: `memcached`, Service: "memcached", Proto: "tcp"},
+				{PatternStr: `ZooKeeper`, Service: "zookeeper", Proto: "tcp"},
+				{PatternStr: `RabbitMQ`, Service: "amqp", Proto: "tcp"},
+				{PatternStr: `Elasticsearch`, Service: "elasticsearch", Proto: "tcp"},
+				{PatternStr: `Kafka`, Service: "kafka", Proto: "tcp"},
 			},
 		},
 	}
@@ -727,6 +779,23 @@ func (pd *ProtocolDetector) DetectProtocol(host string, port int) *ServiceInfo {
 
 	quickProbes := pd.getQuickProbesForPort(port) //获取常见端口对应的识别数据名称
 
+	// 首先尝试自定义规则（最高优先级）
+	customMgr := GetCustomRulesManager()
+	if customMgr.IsLoaded() {
+		customProbes := customMgr.GetCustomProbesForPort(port)
+		for _, probe := range customProbes {
+			// 检查是否超时
+			if time.Now().After(deadline) {
+				break
+			}
+
+			if result := pd.executeProbeWithTimeout(host, port, probe); result != nil {
+				result.Service = result.Service + "(自定义识别结果)" // 添加自定义标识
+				return result
+			}
+		}
+	}
+
 	// 执行快速探测
 	for _, probeName := range quickProbes {
 		// 检查是否超时
@@ -738,6 +807,7 @@ func (pd *ProtocolDetector) DetectProtocol(host string, port int) *ServiceInfo {
 			//在probes切片中找和刚才获取到的识别数据名称匹配的名称，找到以后使用这个识别规则进行识别
 			if pd.probes[i].Name == probeName {
 				if result := pd.executeProbeWithTimeout(host, port, pd.probes[i]); result != nil {
+					//fmt.Println(port)
 					return result
 				}
 				break
@@ -806,7 +876,7 @@ func (pd *ProtocolDetector) getQuickProbesForPort(port int) []string {
 
 // 完整的协议探测（原逻辑，作为回退）
 func (pd *ProtocolDetector) fullProtocolDetection(host string, port int) *ServiceInfo {
-	// 1. 首先尝试HTTP/HTTPS（最常用）
+	// 1. 尝试HTTP/HTTPS（最常用）
 	if result := pd.detectHTTP(host, port); result != nil {
 		return result
 	}
@@ -963,23 +1033,14 @@ func (pd *ProtocolDetector) matchResponse(host string, port int, response []byte
 	//遍历识别规则
 	for _, rule := range probe.Match {
 		var matched bool //判断是否匹配成功
-		var version string
 
 		if rule.IsBinary { //判断是否为二进制识别规则
 			matched = bytes.Contains(response, rule.Pattern) //查看响应数据是否包含这个二进制数据
-			version = rule.Version
 		} else { //正则匹配的识别规则
 			responseStr := string(response)
 			re := regexp.MustCompile(rule.PatternStr) //把这串字符规则转换成计算机能快速执行的格式
 			if re.MatchString(responseStr) {          //用编译好的规则去检查文字，判断是否匹配成功
 				matched = true
-				version = rule.Version
-				if strings.Contains(version, "$1") {
-					matches := re.FindStringSubmatch(responseStr) //找到规则匹配的所有部分
-					if len(matches) > 1 {
-						version = strings.Replace(version, "$1", matches[1], -1) //把$1替换成匹配的部分
-					}
-				}
 			}
 		}
 
@@ -997,7 +1058,6 @@ func (pd *ProtocolDetector) matchResponse(host string, port int, response []byte
 				Protocol: rule.Proto,
 				Service:  rule.Service,
 				Banner:   bannerStr,
-				Version:  version,
 			}
 		}
 	}
@@ -1041,7 +1101,7 @@ func (pd *ProtocolDetector) detectHTTP(host string, port int) *ServiceInfo {
 	server := resp.Header.Get("Server")
 	if server != "" {
 		info.Banner = fmt.Sprintf("HTTP/%d Server: %s", resp.StatusCode, server)
-		info.Version = server
+		info.Service = server
 	} else {
 		info.Banner = fmt.Sprintf("HTTP/%d", resp.StatusCode)
 	}
@@ -1082,7 +1142,7 @@ func (pd *ProtocolDetector) detectHTTPS(host string, port int) *ServiceInfo {
 	server := resp.Header.Get("Server")
 	if server != "" {
 		info.Banner = fmt.Sprintf("HTTPS/%d Server: %s", resp.StatusCode, server)
-		info.Version = server
+		info.Service = server
 	} else {
 		info.Banner = fmt.Sprintf("HTTPS/%d", resp.StatusCode)
 	}
@@ -1117,6 +1177,9 @@ func (pd *ProtocolDetector) BatchDetect(host string, ports []int) []*ServiceInfo
 				mu.Unlock()
 			}
 		}(port)
+
+		// 自定义规则之间添加小延迟
+		time.Sleep(500 * time.Millisecond)
 	}
 
 	wg.Wait()

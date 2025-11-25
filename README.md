@@ -46,11 +46,9 @@ reconquiver.exe -h
 ```
 
 ## 使用说明
-```
-用法： 
-Linux: ./reconquiver [选项]    Windows: reconquiver.exe [选项]
 
-端口扫描模式
+### 端口扫描
+```
 选项:
 -t string    目标地址 (IP/域名)
 -p string    指定端口 (如: 80,443,1000-2000)
@@ -58,7 +56,15 @@ Linux: ./reconquiver [选项]    Windows: reconquiver.exe [选项]
 -A           全端口扫描 (1-65535)
 -C           常见端口扫描
 
-主机探测模式
+端口扫描常用命令:
+./reconquiver -t traget -A                        TCP全端口扫描
+sudo ./reconquiver -t target -A -s TS             SYN全端口扫描
+./reconquiver -t target -C -s U                   UDP常见端口扫描
+sudo ./reconquiver -t target -C -s TA             ACK常见端口扫描
+```
+
+### 主机探测
+```
 选项:
 -d           启用主机发现模式
 -B string    C段探测 (如: 192.168.1.0/24)
@@ -66,24 +72,111 @@ Linux: ./reconquiver [选项]    Windows: reconquiver.exe [选项]
 -L           自定义IP列表探测 (逗号分隔或文件路径)
 -m string    主机探测模式类型选择: A(ARP),ICP(ICMP-PING),ICA(ICMP-ADDRESSMASK),ICT(ICMP-TIMESTAMP),T(TCP-CONNECT),TS(TCP-SYN),U(UDP-CONNECT),N(NETBIOS),O(OXID) (默认: ICP)
 
-公共选项:
--R int       并发扫描次数 (默认选用合适的并发数量，可自行调整)
-
-以下模式需要使用root权限运行：
-TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP(主机探测)
-
-端口扫描常用命令:
-./reconquiver -t traget -A                        TCP全端口扫描
-sudo ./reconquiver -t target -A -s TS             SYN全端口扫描
-./reconquiver -t target -C -s U                   UDP常见端口扫描
-sudo ./reconquiver -t target -C -s TA             ACK常见端口扫描
-
 主机探测常用命令:
 ./reconquiver -d -B traget -m A                   ARP模式进行C段探测
 sudo ./reconquiver -d -B traget -m ICP            ICMP-PING模式进行C段探测
 ./reconquiver -d -B traget -m T                   TCP模式进行C段探测
 sudo ./reconquiver -d -B traget -m TS             TCP-SYN模式进行C段探测
 sudo ./reconquiver -d -B traget -m U              UDP模式进行C段探测
+```
+
+### 并发设置
+```
+-R int       并发扫描次数 (默认选用合适的并发数量，可自行调整)
+
+示例: 
+sudo ./reconquiver -t target -A -s TS -R 500          并发500
+sudo ./reconquiver -d -B traget -m ICP -R 2000        并发2000
+```
+
+### 自定义服务指纹识别规则
+默认的自定义规则识别文件是ReconQuiver目录下的custom_rules.json，可以根据自己想要的规则进行更改和扩展。也可以指定不存在的文件，会自动生成。
+```
+{
+  "rules": [
+    {
+      "name": "识别数据的名称，随便写，能看懂就行",  
+      "ports": [识别数据的指定端口，可以写多个，如果为空则所有端口适用],
+      "protocol": "探测的协议类型，tcp/udp二选一",
+      "data": "发送的探测数据，十六进制数据或字符串，拿ai生成一下你想要的",
+      "send_first": 是否发送数据，true/false，一般为true，除非你的探测数据设置为空,
+      "match": [
+        "匹配规则1",
+        "匹配规则2",
+        "匹配规则3"
+        ......
+      ],
+      "is_binary": [
+        匹配规则1是否为二进制数据,
+        匹配规则2是否为二进制数据,
+        匹配规则3是否为二进制数据
+        ......
+      ],
+      "service": "识别的服务名称"
+    }
+  ]
+}
+```
+要把内容都按格式写才能识别成功，字段名也需要一样，都是小写。
+```
+格式:
+
+{
+  "rules": [
+    {
+      自定义规则1
+    },
+    {
+      自定义规则2  
+    }
+  ]
+}
+```
+下面给了两个示例
+```
+{
+  "rules": [
+    {
+      "name": "MySQLAuth",  
+      "ports": [3306],
+      "protocol": "tcp",
+      "data": "85a6ff0100000001210000000000000000000000000000000000000000000000726f6f740000",
+      "send_first": true,
+      "match": [
+        "\\\\x00\\\\x00\\\\x01\\\\xff",
+        "Host '.*' is not allowed",
+        "Access denied for user"
+      ],
+      "is_binary": [
+        true,
+        false,
+        false
+      ],
+      "service": "mysql"
+    },
+    {
+      "name": "CustomHTTP",
+      "ports": [8080, 8081],
+      "protocol": "tcp",
+      "data": "GET / HTTP/1.1\\r\\nHost: localhost\\r\\nUser-Agent: CustomScanner\\r\\n\\r\\n",
+      "send_first": true,
+      "match": [
+        "HTTP/[0-9.]+ ([0-9]+).*Server: ([^\\r\\n]+)"
+      ],
+      "is_binary": [
+        false
+      ],
+      "service": "http"
+    }
+  ]
+}
+```
+通过如下的方式指定自定义规则文件，这个功能只有端口扫描时可以用
+```
+-rules string 	自定义服务识别规则文件路径
+
+示例:
+./reconquiver -t traget -A  -rules custom_rules.json    
 ```
 
 ## 注意事项
