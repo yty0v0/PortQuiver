@@ -10,7 +10,7 @@
 
 包括六种扫描模式：TCP-CONNECT，TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP-CONNECT。
 
-包括对端口所开放服务的智能指纹识别
+包括对开放服务的智能指纹识别，支持自定义指纹识别规则，可自行扩展规则。
 
 ### 存活主机探测
 包括三种探测方法：C段探测，自定义主机范围探测，自定义主机列表探测。
@@ -176,7 +176,7 @@ sudo ./reconquiver -d -B traget -m ICP -R 2000        并发2000
 -rules string 	自定义服务识别规则文件路径
 
 示例:
-./reconquiver -t traget -A  -rules custom_rules.json    
+./reconquiver -t traget -A  -rules custom_rules.json
 ```
 
 ## 注意事项
