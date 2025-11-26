@@ -128,7 +128,7 @@ func executeHostDiscovery(config *Config, rate int) {
 	case "TS":
 		tcp_host.Tcp_syn(targets, rate)
 	case "U":
-		udp_host.Udp_connect(targets, rate)
+		udp_host.Udp(targets, rate)
 	case "ICT":
 		icmp_host.Timestamp(targets, rate)
 	case "ICA":
@@ -159,7 +159,7 @@ func parseFlags() *Config {
 	flag.StringVar(&config.CIDR, "B", "", "C段探测 (如: 192.168.1.0/24)")
 	flag.StringVar(&config.IPRange, "E", "", "自定义IP范围探测 (如: 192.168.1.1-100)")
 	flag.StringVar(&config.IPList, "L", "", "自定义IP列表探测 (逗号分隔或文件路径)")
-	flag.StringVar(&config.DiscoveryMode, "m", "ICP", "主机探测模式类型选择: A(ARP),ICP(ICMP-PING),ICA(ICMP-ADDRESSMASK),ICT(ICMP-TIMESTAMP),T(TCP-CONNECT),TS(TCP-SYN),U(UDP-CONNECT),N(NETBIOS),O(OXID) (默认: ICP)")
+	flag.StringVar(&config.DiscoveryMode, "m", "ICP", "主机探测模式类型选择: A(ARP),ICP(ICMP-PING),ICA(ICMP-ADDRESSMASK),ICT(ICMP-TIMESTAMP),T(TCP-CONNECT),TS(TCP-SYN),U(UDP),N(NETBIOS),O(OXID) (默认: ICP)")
 
 	// 公共参数
 	flag.IntVar(&config.Rate, "R", 300, "并发扫描次数")
@@ -183,7 +183,7 @@ func parseFlags() *Config {
 		fmt.Println("  -B string        C段探测 (如: 192.168.1.0/24)")
 		fmt.Println("  -E string        自定义IP范围探测 (如: 192.168.1.1-100)")
 		fmt.Println("  -L string        自定义IP列表探测 (逗号分隔或文件路径)")
-		fmt.Println("  -m string        主机探测模式类型选择: A(ARP),ICP(ICMP-PING),ICA(ICMP-ADDRESSMASK),ICT(ICMP-TIMESTAMP),T(TCP-CONNECT),TS(TCP-SYN),U(UDP-CONNECT),N(NETBIOS),O(OXID) (默认: ICP)")
+		fmt.Println("  -m string        主机探测模式类型选择: A(ARP),ICP(ICMP-PING),ICA(ICMP-ADDRESSMASK),ICT(ICMP-TIMESTAMP),T(TCP-CONNECT),TS(TCP-SYN),U(UDP),N(NETBIOS),O(OXID) (默认: ICP)")
 
 		fmt.Println("\n公共选项:")
 		fmt.Println("  -R int           并发扫描次数 (默认选用合适的并发数量，可自行调整)")
@@ -383,7 +383,7 @@ func getScanMode(scanType string, ipaddres string, port []int, rate int) {
 	case "TN":
 		tcp_port.Tcp_null(ipaddres, port, rate)
 	case "U":
-		udp_port.Udp_connect(ipaddres, port, rate)
+		udp_port.Udp(ipaddres, port, rate)
 	}
 }
 

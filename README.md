@@ -8,14 +8,14 @@
 ### 端口扫描
 包括四种扫描方法：全端口扫描，常见端口扫描，自定义端口扫描，自定义端口范围扫描。
 
-包括六种扫描模式：TCP-CONNECT，TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP-CONNECT。
+包括六种扫描模式：TCP-CONNECT，TCP-SYN，TCP-ACK，TCP-FIN，TCP-NULL，UDP。
 
 包括对开放服务的智能指纹识别，支持自定义指纹识别规则，用户可按需自行扩展。
 
 ### 存活主机探测
 包括三种探测方法：C段探测，自定义主机范围探测，自定义主机列表探测。
 
-包括九种探测模式：ARP，ICMP-PING，ICMP-ADDRESSMASK，ICMP-TIMESTAMP，TCP-CONNECT，TCP-SYN，UDP-CONNECT，OXID，NETBIOS。
+包括九种探测模式：ARP，ICMP-PING，ICMP-ADDRESSMASK，ICMP-TIMESTAMP，TCP-CONNECT，TCP-SYN，UDP，OXID，NETBIOS。
 
 包括对主机MAC地址，主机信息(所属厂商，类型，操作系统，主机名)，主机状态，主机存活原因的获取
 
@@ -70,7 +70,7 @@ sudo ./reconquiver -t target -C -s TA             ACK常见端口扫描
 -B string    C段探测 (如: 192.168.1.0/24)
 -E string    自定义IP范围探测 (如: 192.168.1.1-100)
 -L           自定义IP列表探测 (逗号分隔或文件路径)
--m string    主机探测模式类型选择: A(ARP),ICP(ICMP-PING),ICA(ICMP-ADDRESSMASK),ICT(ICMP-TIMESTAMP),T(TCP-CONNECT),TS(TCP-SYN),U(UDP-CONNECT),N(NETBIOS),O(OXID) (默认: ICP)
+-m string    主机探测模式类型选择: A(ARP),ICP(ICMP-PING),ICA(ICMP-ADDRESSMASK),ICT(ICMP-TIMESTAMP),T(TCP-CONNECT),TS(TCP-SYN),U(UDP),N(NETBIOS),O(OXID) (默认: ICP)
 
 主机探测常用命令:
 ./reconquiver -d -B traget -m A                   ARP模式进行C段探测

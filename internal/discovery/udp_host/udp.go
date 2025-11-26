@@ -18,7 +18,7 @@ type UDPResult struct {
 
 var results_udp_survival []UDPResult //存储所有存活主机
 
-func Udp_connect(ipaddres []string, rate int) {
+func Udp(ipaddres []string, rate int) {
 
 	//如果rate是默认值，则设置为并100（并发100的结果更准确）
 	if rate == 300 {
